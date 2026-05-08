@@ -1,4 +1,4 @@
-# Arquitetura de Banco de Dados - Montador Pro (Supabase)
+# Arquitetura de Banco de Dados - Montador Lucrativo (Supabase)
 
 ## 1. Paradigma Multi-Tenant e Segurança
 - **Isolamento de Dados:** Utilizaremos "Tabela Compartilhada com RLS (Row Level Security)". 

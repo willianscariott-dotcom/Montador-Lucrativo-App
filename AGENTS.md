@@ -1,4 +1,4 @@
-# Montador Pro - Regras para a IA (Antigravity / OpenCode)
+# Montador Lucrativo - Regras para a IA (Antigravity / OpenCode)
 
 ## 1. Stack Tecnológica
 - **Frontend:** React 19, Vite 8 (motor Rolldown).

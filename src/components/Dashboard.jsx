@@ -1,22 +1,35 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/auth'
-import { useProfile, useWallet, useQuoteStats } from '../hooks/useProfile'
+import { useProfile } from '../hooks/useProfile'
 import { navItems } from './navItems'
 import { HomeTab } from './tabs/HomeTab'
 import { QuotesTab } from './tabs/QuotesTab'
 import { ClientsTab } from './tabs/ClientsTab'
 import { SettingsTab } from './tabs/SettingsTab'
+import { QuoteBuilder } from './form/QuoteBuilder'
 import { Loader2 } from 'lucide-react'
 
 export default function Dashboard() {
   const setSession = useAuthStore((s) => s.setSession)
   const user = useAuthStore((s) => s.user)
   const [activeTab, setActiveTab] = useState('home')
+  const [showQuoteBuilder, setShowQuoteBuilder] = useState(false)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setSession(null)
+  }
+
+  if (showQuoteBuilder) {
+    return (
+      <div className="flex flex-col min-h-screen bg-slate-900">
+        <DashboardHeader user={user} onLogout={handleLogout} />
+        <main className="flex-1 p-4">
+          <QuoteBuilder onBack={() => setShowQuoteBuilder(false)} />
+        </main>
+      </div>
+    )
   }
 
   const renderTab = () => {
@@ -24,7 +37,7 @@ export default function Dashboard() {
       case 'home':
         return <HomeTab />
       case 'quotes':
-        return <QuotesTab />
+        return <QuotesTab onNewQuote={() => setShowQuoteBuilder(true)} />
       case 'clients':
         return <ClientsTab />
       case 'settings':

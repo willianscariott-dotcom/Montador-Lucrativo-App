@@ -1,11 +1,14 @@
 import { FileText, Plus } from 'lucide-react'
 
-export function QuotesTab() {
+export function QuotesTab({ onNewQuote }) {
   return (
     <div className="max-w-md mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-100">Orçamentos</h2>
-        <button className="h-12 px-4 flex items-center gap-2 text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all">
+        <button
+          onClick={onNewQuote}
+          className="h-12 px-4 flex items-center gap-2 text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all"
+        >
           <Plus className="w-5 h-5" />
           Novo
         </button>

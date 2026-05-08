@@ -1,4 +1,4 @@
-# Design System - Montador Pro (Padrão Industrial DeWalt Premium)
+# Design System - Montador Lucrativo (Padrão Industrial DeWalt Premium)
 
 ## 1. Stack de Estilização
 - **Framework:** Tailwind CSS v4.0.
