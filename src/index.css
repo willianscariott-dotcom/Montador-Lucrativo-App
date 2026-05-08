@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-950: #0f172a;
+  --color-slate-900: #1e293b;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-400: #94a3b8;
+  --color-slate-300: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-100: #f1f5f9;
+
+  --color-amber-500: #f59e0b;
+  --color-amber-400: #fbbf24;
+  --color-amber-600: #d97706;
+
+  --color-emerald-500: #10b981;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+
+  --font-family-sans: 'Barlow', system-ui, sans-serif;
+
+  --radius-industrial: 6px;
+  --radius-panel: 12px;
+
+  --shadow-stamped: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+  --shadow-panel: 0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-slate-950);
+    min-height: 100vh;
+  }
+
+  input, button, textarea, select {
+    font-family: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
