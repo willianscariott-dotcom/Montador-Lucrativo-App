@@ -89,8 +89,10 @@ export function QuoteBuilder({ onBack }) {
     mutationFn: async () => {
       if (!clientName.trim()) throw new Error('Nome do cliente é obrigatório')
 
-      const validItems = items.filter((i) => i.description.trim() && i.unit_price)
-      if (validItems.length === 0) throw new Error('Adicione pelo menos um item')
+      const validItems = items.filter((i) => i.description?.trim() && i.unit_price && Number(i.unit_price) > 0)
+      if (validItems.length === 0) throw new Error('Adicione pelo menos um item com descrição e valor')
+
+      const totalAmount = validItems.reduce((sum, item) => sum + (Number(item.quantity) || 1) * (Number(item.unit_price) || 0), 0)
 
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
@@ -98,7 +100,7 @@ export function QuoteBuilder({ onBack }) {
           tenant_id: user?.id,
           client_name: clientName.trim(),
           client_document: clientDocument.trim() || null,
-          total_amount: total,
+          total_amount: totalAmount,
           status: 'draft',
         })
         .select()

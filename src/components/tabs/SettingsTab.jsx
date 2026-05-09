@@ -1,14 +1,30 @@
 import { useState } from 'react'
-import { useProfile } from '../../hooks/useProfile'
+import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import { CatalogManager } from '../form/CatalogManager'
 import { PricingSettings } from '../form/PricingSettings'
 import { ReferralDashboard } from '../form/ReferralDashboard'
 import { UpgradePlan } from '../form/UpgradePlan'
-import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift, Tag, Wallet, Bell, Link2, X, Plus } from 'lucide-react'
+
+const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentação', 'Material de Montagem', 'Manutenção Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
+const DEFAULT_INCOME_CATEGORIES = ['Serviço Montagem', 'Serviço Instalação', 'Serviço Avulso', 'Receita Extra']
+const DEFAULT_ACCOUNTS = ['Carteira', 'Conta Banco', 'Pix']
+
+const REGIMES = [
+  { value: 'MEI', label: 'MEI', limit: 81600 },
+  { value: 'Simples', label: 'Simples Nacional', limit: 3600000 },
+  { value: 'Presumido', label: 'Lucro Presumido', limit: 0 },
+  { value: 'Real', label: 'Lucro Real', limit: 0 },
+]
 
 export function SettingsTab() {
   const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
   const [showView, setShowView] = useState(null)
+  const [showCategories, setShowCategories] = useState(false)
+  const [showAccounts, setShowAccounts] = useState(false)
+  const [showLimits, setShowLimits] = useState(false)
+  const [showReminder, setShowReminder] = useState(false)
 
   if (showView === 'catalog') {
     return <CatalogManager onClose={() => setShowView(null)} />
@@ -26,10 +42,31 @@ export function SettingsTab() {
     return <UpgradePlan onBack={() => setShowView(null)} />
   }
 
+  if (showCategories) {
+    return <CategoriesManager onClose={() => setShowCategories(false)} />
+  }
+
+  if (showAccounts) {
+    return <AccountsManager onClose={() => setShowAccounts(false)} />
+  }
+
+  if (showLimits) {
+    return <LimitsManager onClose={() => setShowLimits(false)} />
+  }
+
+  if (showReminder) {
+    return <ReminderManager onClose={() => setShowReminder(false)} />
+  }
+
   const settings = profile?.settings || {}
   const pricing = settings.pricing || {}
   const catalogServices = profile?.settings?.catalogServices?.length || 0
   const catalogParts = profile?.settings?.catalogParts?.length || 0
+  const expenseCats = (settings.expenseCategories || DEFAULT_EXPENSE_CATEGORIES).length
+  const incomeCats = (settings.incomeCategories || DEFAULT_INCOME_CATEGORIES).length
+  const accounts = (settings.accounts || DEFAULT_ACCOUNTS).length
+  const annualLimit = settings.annualLimit || {}
+  const reminder = settings.monthlyReminder || {}
 
   const calculateHourlyRate = () => {
     const das = Number(pricing.dasValue) || 0
@@ -160,16 +197,68 @@ export function SettingsTab() {
           <ChevronRight className="w-5 h-5 text-slate-500" />
         </button>
 
-        <div className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
-          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-slate-700">
-            <Clock className="w-6 h-6 text-slate-400" />
+        <button
+          onClick={() => setShowLimits(true)}
+          className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+        >
+          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-red-500/10">
+            <Wallet className="w-6 h-6 text-red-500" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-slate-100">Tempo no App</p>
-            <p className="text-sm text-slate-400">Membro desde {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'carregando...'}</p>
+          <div className="flex-1 text-left">
+            <p className="font-medium text-slate-100">Limite Anual</p>
+            <p className="text-sm text-slate-400">
+              {annualLimit.regime ? `${annualLimit.regime} · ${annualLimit.value ? `R$ ${Number(annualLimit.value).toFixed(2).replace('.', ',')}` : 'não definido'}` : 'Configure seu regime'}
+            </p>
           </div>
-        </div>
+          <ChevronRight className="w-5 h-5 text-slate-500" />
+        </button>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button
+          onClick={() => setShowCategories(true)}
+          className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+        >
+          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-purple-500/10">
+            <Tag className="w-6 h-6 text-purple-400" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium text-slate-100">Categorias</p>
+            <p className="text-sm text-slate-400">{expenseCats} despesas · {incomeCats} receitas</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-500" />
+        </button>
+
+        <button
+          onClick={() => setShowAccounts(true)}
+          className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+        >
+          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-cyan-500/10">
+            <Wallet className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium text-slate-100">Contas</p>
+            <p className="text-sm text-slate-400">{accounts} contas configuradas</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-500" />
+        </button>
+      </div>
+
+      <button
+        onClick={() => setShowReminder(true)}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-amber-500/10">
+          <Bell className="w-6 h-6 text-amber-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Lembrete Mensal</p>
+          <p className="text-sm text-slate-400">
+            {reminder.enabled ? reminder.text || 'Lembrete ativo' : 'Configure um lembrete mensal'}
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
 
       <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped overflow-hidden">
         <div className="flex items-center gap-4 p-4 border-b border-slate-700">
@@ -203,6 +292,273 @@ export function SettingsTab() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function CategoriesManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
+  const settings = profile?.settings || {}
+  const [expenseCats, setExpenseCats] = useState(settings.expenseCategories || DEFAULT_EXPENSE_CATEGORIES)
+  const [incomeCats, setIncomeCats] = useState(settings.incomeCategories || DEFAULT_INCOME_CATEGORIES)
+  const [newExpense, setNewExpense] = useState('')
+  const [newIncome, setNewIncome] = useState('')
+
+  const save = () => {
+    updateSettings.mutate({ expenseCategories: expenseCats, incomeCategories: incomeCats })
+    onClose()
+  }
+
+  const addExpense = () => {
+    if (newExpense.trim() && !expenseCats.includes(newExpense.trim())) {
+      setExpenseCats([...expenseCats, newExpense.trim()])
+      setNewExpense('')
+    }
+  }
+
+  const addIncome = () => {
+    if (newIncome.trim() && !incomeCats.includes(newIncome.trim())) {
+      setIncomeCats([...incomeCats, newIncome.trim()])
+      setNewIncome('')
+    }
+  }
+
+  const removeExpense = (cat) => setExpenseCats(expenseCats.filter((c) => c !== cat))
+  const removeIncome = (cat) => setIncomeCats(incomeCats.filter((c) => c !== cat))
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Categorias</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <h3 className="font-bold text-slate-100 mb-3">Despesas</h3>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {expenseCats.map((cat) => (
+            <button key={cat} onClick={() => removeExpense(cat)} className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-industrial hover:bg-red-500/20 transition-colors">
+              {cat}
+              <X className="w-3 h-3" />
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input type="text" value={newExpense} onChange={(e) => setNewExpense(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addExpense()} placeholder="Nova categoria de despesa" className="flex-1 h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <button onClick={addExpense} className="h-12 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <h3 className="font-bold text-slate-100 mb-3">Receitas</h3>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {incomeCats.map((cat) => (
+            <button key={cat} onClick={() => removeIncome(cat)} className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-industrial hover:bg-emerald-500/20 transition-colors">
+              {cat}
+              <X className="w-3 h-3" />
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input type="text" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addIncome()} placeholder="Nova categoria de receita" className="flex-1 h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <button onClick={addIncome} className="h-12 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <button onClick={save} className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+        Salvar Alterações
+      </button>
+    </div>
+  )
+}
+
+function AccountsManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
+  const settings = profile?.settings || {}
+  const [accounts, setAccounts] = useState(settings.accounts || DEFAULT_ACCOUNTS)
+  const [newAccount, setNewAccount] = useState('')
+
+  const save = () => {
+    updateSettings.mutate({ accounts })
+    onClose()
+  }
+
+  const addAccount = () => {
+    if (newAccount.trim() && !accounts.includes(newAccount.trim())) {
+      setAccounts([...accounts, newAccount.trim()])
+      setNewAccount('')
+    }
+  }
+
+  const removeAccount = (acc) => setAccounts(accounts.filter((a) => a !== acc))
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Contas e Carteiras</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <h3 className="font-bold text-slate-100 mb-3">Suas Contas</h3>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {accounts.map((acc) => (
+            <button key={acc} onClick={() => removeAccount(acc)} className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-industrial hover:bg-cyan-500/20 transition-colors">
+              <Wallet className="w-3 h-3" />
+              {acc}
+              <X className="w-3 h-3" />
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input type="text" value={newAccount} onChange={(e) => setNewAccount(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addAccount()} placeholder="Ex: Nubank, CEF, BTG+" className="flex-1 h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <button onClick={addAccount} className="h-12 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <button onClick={save} className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+        Salvar Alterações
+      </button>
+    </div>
+  )
+}
+
+function LimitsManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
+  const settings = profile?.settings || {}
+  const annualLimit = settings.annualLimit || {}
+  const [regime, setRegime] = useState(annualLimit.regime || 'MEI')
+  const [customLimit, setCustomLimit] = useState(annualLimit.value || '')
+
+  const selectedRegime = REGIMES.find((r) => r.value === regime) || REGIMES[0]
+
+  const save = () => {
+    updateSettings.mutate({ annualLimit: { regime, value: customLimit ? Number(customLimit) : selectedRegime.limit } })
+    onClose()
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Limite Anual de Faturamento</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <p className="text-sm text-slate-400 mb-3">Escolha seu regime tributário para acompanhamento do limite anual.</p>
+        <div className="grid grid-cols-2 gap-2">
+          {REGIMES.map((r) => (
+            <button
+              key={r.value}
+              onClick={() => { setRegime(r.value); if (!customLimit) setCustomLimit(r.limit) }}
+              className={`h-12 px-3 text-sm font-medium rounded-industrial border transition-all ${
+                regime === r.value
+                  ? 'text-slate-950 bg-amber-500 border-amber-500 shadow-stamped'
+                  : 'text-slate-300 bg-slate-700 border-slate-600 hover:bg-slate-600'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-bold text-slate-100">Valor do Limite</p>
+          {selectedRegime.limit > 0 && (
+            <span className="text-xs text-slate-400">{regime === 'MEI' ? 'Atualizado 2026' : regime === 'Simples' ? 'Limite mensal R$ 300.000' : 'Sem limite padrão'}</span>
+          )}
+        </div>
+        <input
+          type="number"
+          value={customLimit}
+          onChange={(e) => setCustomLimit(e.target.value)}
+          placeholder={String(selectedRegime.limit || '0')}
+          min="0"
+          className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+        />
+        {customLimit && (
+          <p className="text-sm text-slate-400 mt-2">
+            Limite anual: <span className="font-bold text-slate-200">R$ {Number(customLimit).toFixed(2).replace('.', ',')}</span>
+          </p>
+        )}
+      </div>
+
+      <button onClick={save} className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+        Salvar Alterações
+      </button>
+    </div>
+  )
+}
+
+function ReminderManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
+  const settings = profile?.settings || {}
+  const reminder = settings.monthlyReminder || {}
+  const [enabled, setEnabled] = useState(reminder.enabled ?? true)
+  const [text, setText] = useState(reminder.text || '')
+
+  const save = () => {
+    updateSettings.mutate({ monthlyReminder: { enabled, text: text.trim() || 'Verificar pendências mensais' } })
+    onClose()
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Lembrete Mensal</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="reminderEnabled"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="w-6 h-6 accent-amber-500"
+          />
+          <label htmlFor="reminderEnabled" className="flex items-center gap-2 font-bold text-slate-100 cursor-pointer">
+            <Bell className="w-5 h-5 text-amber-500" />
+            Ativar lembrete mensal
+          </label>
+        </div>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <p className="text-sm text-slate-400 mb-3">Texto do lembrete exibido no topo do Dashboard.</p>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Ex: Verificar DAS até dia 20, coletar notas fiscais..."
+          className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+        />
+      </div>
+
+      <button onClick={save} className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+        Salvar Alterações
+      </button>
     </div>
   )
 }

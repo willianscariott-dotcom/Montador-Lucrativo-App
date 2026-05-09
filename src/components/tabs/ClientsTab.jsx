@@ -1,20 +1,37 @@
 import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
-import { Users, UserPlus, X } from 'lucide-react'
+import { Users, UserPlus, X, Cake } from 'lucide-react'
 
 export function ClientsTab() {
   const { data: profile } = useProfile()
   const updateSettings = useUpdateSettings()
   const [showModal, setShowModal] = useState(false)
+  const [editingClient, setEditingClient] = useState(null)
   const settings = profile?.settings || {}
   const clients = settings.clients || []
 
+  const today = new Date()
+  const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`
+  const birthdayToday = clients.find((c) => c.birthdate?.slice(5, 10) === todayStr)
+
   return (
     <div className="max-w-7xl mx-auto">
+      {birthdayToday && (
+        <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-panel shadow-stamped flex items-center gap-3">
+          <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/20">
+            <Cake className="w-5 h-5 text-amber-500" />
+          </div>
+          <div>
+            <p className="font-bold text-amber-500">Aniversariante do Dia!</p>
+            <p className="text-sm text-slate-200">{birthdayToday.name}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-100">Clientes</h2>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => { setEditingClient(null); setShowModal(true) }}
           className="h-14 px-6 flex items-center gap-2 text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 transition-all"
         >
           <UserPlus className="w-5 h-5" />
@@ -33,16 +50,17 @@ export function ClientsTab() {
       ) : (
         <div className="space-y-3">
           {clients.map((client) => (
-            <div key={client.id} className="p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-slate-700">
-                  <Users className="w-6 h-6 text-slate-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-100">{client.name}</p>
-                  <p className="text-sm text-slate-400">{client.phone ? `(${client.phone.slice(0,2)}) ${client.phone.slice(2,7)}-${client.phone.slice(7)}` : client.email || ''}</p>
-                </div>
+            <div key={client.id} className="p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped flex items-center gap-4">
+              <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-slate-700">
+                <Users className="w-6 h-6 text-slate-400" />
               </div>
+              <div className="flex-1">
+                <p className="font-medium text-slate-100">{client.name}</p>
+                <p className="text-sm text-slate-400">{client.phone ? `(${client.phone.slice(0,2)}) ${client.phone.slice(2,7)}-${client.phone.slice(7)}` : ''}</p>
+              </div>
+              {client.birthdate && (
+                <span className="text-xs text-amber-500">{new Date(client.birthdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+              )}
             </div>
           ))}
         </div>
@@ -50,9 +68,15 @@ export function ClientsTab() {
 
       {showModal && (
         <ClientModal
+          client={editingClient}
           onClose={() => setShowModal(false)}
           onSave={(client) => {
-            const newClients = [...clients, { ...client, id: Date.now() }]
+            let newClients
+            if (editingClient) {
+              newClients = clients.map((c) => c.id === editingClient.id ? { ...c, ...client } : c)
+            } else {
+              newClients = [...clients, { ...client, id: Date.now() }]
+            }
             updateSettings.mutate({ clients: newClients })
           }}
         />
@@ -61,11 +85,12 @@ export function ClientsTab() {
   )
 }
 
-function ClientModal({ onClose, onSave }) {
-  const [name, setName] = useState('')
+function ClientModal({ client, onClose, onSave }) {
+  const [name, setName] = useState(client?.name || '')
   const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [document, setDocument] = useState('')
+  const [address, setAddress] = useState(client?.address || '')
+  const [document, setDocument] = useState(client?.document || '')
+  const [birthdate, setBirthdate] = useState(client?.birthdate || '')
 
   const formatPhone = (value) => {
     const cleaned = value.replace(/\D/g, '')
@@ -75,9 +100,16 @@ function ClientModal({ onClose, onSave }) {
     return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`
   }
 
-  const handlePhoneChange = (e) => {
-    setPhone(formatPhone(e.target.value))
+  const formatDoc = (value) => {
+    const cleaned = value.replace(/\D/g, '')
+    if (cleaned.length <= 11) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    }
+    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
   }
+
+  const handlePhoneChange = (e) => setPhone(formatPhone(e.target.value))
+  const handleDocChange = (e) => setDocument(formatDoc(e.target.value))
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -86,8 +118,8 @@ function ClientModal({ onClose, onSave }) {
       name: name.trim(),
       phone: phone.replace(/\D/g, ''),
       address: address.trim(),
-      document: document.trim(),
-      createdAt: new Date().toISOString(),
+      document: document.replace(/\D/g, ''),
+      birthdate: birthdate,
     })
     onClose()
   }
@@ -96,7 +128,7 @@ function ClientModal({ onClose, onSave }) {
     <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 className="font-bold text-slate-100">Novo Cliente</h3>
+          <h3 className="font-bold text-slate-100">{client ? 'Editar Cliente' : 'Novo Cliente'}</h3>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-700 hover:bg-slate-600">
             <X className="w-5 h-5 text-slate-300" />
           </button>
@@ -104,51 +136,27 @@ function ClientModal({ onClose, onSave }) {
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label className="block mb-1.5 text-sm font-medium text-slate-300">Nome *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nome completo"
-              className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-              required
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" required />
           </div>
           <div>
             <label className="block mb-1.5 text-sm font-medium text-slate-300">Telefone/WhatsApp</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={handlePhoneChange}
-              placeholder="(11) 99999-9999"
-              className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
+            <input type="tel" value={phone} onChange={handlePhoneChange} placeholder="(11) 99999-9999" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">CPF/CNPJ <span className="text-slate-500">(Opcional)</span></label>
+            <input type="text" value={document} onChange={handleDocChange} placeholder="CPF ou CNPJ" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           </div>
           <div>
             <label className="block mb-1.5 text-sm font-medium text-slate-300">Endereço</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Endereço do cliente"
-              className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
+            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereço do cliente" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           </div>
           <div>
-            <label className="block mb-1.5 text-sm font-medium text-slate-300">CPF</label>
-            <input
-              type="text"
-              value={document}
-              onChange={(e) => setDocument(e.target.value)}
-              placeholder="CPF do cliente"
-              className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Data de Nascimento <span className="text-slate-500">(Opcional)</span></label>
+            <input type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500" />
           </div>
-          <button
-            type="submit"
-            className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
-          >
+          <button type="submit" className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
             <UserPlus className="w-5 h-5" />
-            Adicionar Cliente
+            {client ? 'Salvar Alterações' : 'Adicionar Cliente'}
           </button>
         </form>
       </div>
