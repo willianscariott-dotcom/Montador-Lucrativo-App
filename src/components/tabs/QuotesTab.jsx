@@ -2,7 +2,7 @@ import { FileText, Plus } from 'lucide-react'
 
 export function QuotesTab({ onNewQuote }) {
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-slate-100">Orçamentos</h2>
         <button

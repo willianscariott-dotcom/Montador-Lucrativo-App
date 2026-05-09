@@ -28,8 +28,8 @@ Abandone sombras suaves difusas de softwares tradicionais. Use uma estética de 
 - **Peso de Fontes (Weight):** Títulos em Bold (700), Valores Monetários e Dados em Medium (500). Evite fontes finas ou Light, pois desaparecem em telas expostas ao sol ou com sujeira [14, 15].
 
 ## 6. Responsividade: Padrão "Floating Mobile App" (Desktop)
-- O aplicativo tem como alvo primário dispositivos móveis. Em telas grandes (Desktop/Tablet), a interface NÃO deve se esticar horizontalmente.
-- O conteúdo principal deve ser envolvido em um container restrito (ex: `max-w-md mx-auto min-h-screen`).
-- No Desktop, o fundo da página (body) deve exibir a cor da marca (Slate 950 ou um sutil background metálico), e o container do app deve parecer um "telefone flutuante" com fundo mais claro (Slate 900), sombreado pesado (`shadow-2xl`) e bordas laterais delimitadas.
+- O aplicativo é Mobile-First, mas deve se expandir e aproveitar o espaço horizontal em telas grandes (Desktop/Tablet).
+Remova as restrições de max-w-md dos containers principais. Utilize container mx-auto max-w-7xl px-4 para que o layout respire no desktop.
+Em telas grandes, formulários (como o Novo Orçamento) devem se reorganizar usando CSS Grid (ex: dividir dados do cliente e itens em duas colunas) para otimizar o espaço.
 
 -

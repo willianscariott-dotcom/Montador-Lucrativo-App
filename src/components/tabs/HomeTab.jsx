@@ -37,7 +37,7 @@ export function HomeTab() {
   ]
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4">
       <h2 className="text-lg font-bold text-slate-100">Resumo Financeiro</h2>
 
       <div className="grid grid-cols-2 gap-3">

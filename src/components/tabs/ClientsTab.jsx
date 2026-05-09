@@ -2,7 +2,7 @@ import { Users } from 'lucide-react'
 
 export function ClientsTab() {
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-7xl mx-auto">
       <h2 className="text-lg font-bold text-slate-100 mb-4">Clientes</h2>
 
       <div className="p-6 text-center bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">

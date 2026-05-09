@@ -32,7 +32,7 @@ export function SettingsTab() {
   const catalogParts = profile?.settings?.catalogParts?.length || 0
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4">
       <h2 className="text-lg font-bold text-slate-100">Ajustes</h2>
 
       <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped overflow-hidden">

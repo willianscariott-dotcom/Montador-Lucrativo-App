@@ -46,7 +46,7 @@ export function CatalogManager({ onClose }) {
   }
 
   return (
-    <div className="max-w-md mx-auto pb-24">
+    <div className="max-w-7xl mx-auto pb-24">
       <div className="flex items-center gap-3 mb-6">
         {onClose && (
           <button
