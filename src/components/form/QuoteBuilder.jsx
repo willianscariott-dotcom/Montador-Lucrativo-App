@@ -46,13 +46,10 @@ export function QuoteBuilder({ onBack }) {
   }, [items, clientName, setHasUnsaved])
 
   const addItem = () => setItems((prev) => [...prev, { ...emptyItem }])
-
   const removeItem = (index) => setItems((prev) => prev.filter((_, i) => i !== index))
-
   const updateItem = (index, field, value) => {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
   }
-
   const openCatalogModal = (index) => setCatalogModal({ open: true, index })
   const closeCatalogModal = () => setCatalogModal({ open: false, index: null })
 
@@ -94,10 +91,13 @@ export function QuoteBuilder({ onBack }) {
 
       const totalAmount = validItems.reduce((sum, item) => sum + (Number(item.quantity) || 1) * (Number(item.unit_price) || 0), 0)
 
+      const tenantId = user?.id || user?.user_id
+      if (!tenantId) throw new Error('Usuário não autenticado')
+
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
         .insert({
-          tenant_id: user?.id,
+          tenant_id: tenantId,
           client_name: clientName.trim(),
           client_document: clientDocument.trim() || null,
           total_amount: totalAmount,
@@ -110,7 +110,7 @@ export function QuoteBuilder({ onBack }) {
 
       const itemsToInsert = validItems.map((item) => ({
         quote_id: quote.id,
-        tenant_id: user?.id,
+        tenant_id: tenantId,
         type: item.type,
         description: item.description.trim(),
         quantity: Number(item.quantity) || 1,
