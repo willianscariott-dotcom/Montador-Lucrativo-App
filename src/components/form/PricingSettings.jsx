@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
-import { Calculator, Percent, DollarSign, TrendingUp, Calendar, Clock, Building2, X } from 'lucide-react'
+import { Calculator, Percent, DollarSign, Calendar, Clock, Building2, X } from 'lucide-react'
 
 export function PricingSettings({ onClose }) {
   const { data: profile } = useProfile()
@@ -28,12 +28,7 @@ export function PricingSettings({ onClose }) {
     const profitMargin = Number(form.profitMargin) || 0
     const days = Number(form.workDays) || 22
     const hours = Number(form.workHours) || 8
-
-    const monthlyGross = das + proLabore + fixedCosts
-    const monthlyNet = monthlyGross * (1 + profitMargin / 100)
-    const totalHours = days * hours
-    const hourlyRate = totalHours > 0 ? monthlyNet / totalHours : 0
-
+    const hourlyRate = days * hours > 0 ? (das + proLabore + fixedCosts) * (1 + profitMargin / 100) / (days * hours) : 0
     return hourlyRate
   }
 
@@ -60,6 +55,11 @@ export function PricingSettings({ onClose }) {
   }
 
   const hourlyRate = calculateHourlyRate()
+  const formatCurrency = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`
+
+  const monthlyGross = (Number(form.dasValue) || 0) + (Number(form.proLabore) || 0) + (Number(form.fixedCosts) || 0)
+  const monthlyNet = monthlyGross * (1 + (Number(form.profitMargin) || 0) / 100)
+  const totalHours = (Number(form.workDays) || 22) * (Number(form.workHours) || 8)
 
   return (
     <div className="max-w-7xl mx-auto pb-24">
@@ -91,36 +91,19 @@ export function PricingSettings({ onClose }) {
               </div>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => setForm((prev) => ({ ...prev, regime: 'mei' }))}
-                className={`flex-1 h-12 rounded-industrial font-medium text-sm transition-colors ${
-                  form.regime === 'mei'
-                    ? 'bg-amber-500 text-slate-950 shadow-stamped'
-                    : 'bg-slate-700 text-slate-300 border border-slate-600'
-                }`}
-              >
-                MEI
-              </button>
-              <button
-                onClick={() => setForm((prev) => ({ ...prev, regime: 'simples' }))}
-                className={`flex-1 h-12 rounded-industrial font-medium text-sm transition-colors ${
-                  form.regime === 'simples'
-                    ? 'bg-amber-500 text-slate-950 shadow-stamped'
-                    : 'bg-slate-700 text-slate-300 border border-slate-600'
-                }`}
-              >
-                Simples Nacional
-              </button>
-              <button
-                onClick={() => setForm((prev) => ({ ...prev, regime: 'outro' }))}
-                className={`flex-1 h-12 rounded-industrial font-medium text-sm transition-colors ${
-                  form.regime === 'outro'
-                    ? 'bg-amber-500 text-slate-950 shadow-stamped'
-                    : 'bg-slate-700 text-slate-300 border border-slate-600'
-                }`}
-              >
-                Outro
-              </button>
+              {[{ id: 'mei', label: 'MEI' }, { id: 'simples', label: 'Simples Nacional' }, { id: 'outro', label: 'Outro' }].map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setForm((p) => ({ ...p, regime: r.id }))}
+                  className={`flex-1 h-12 rounded-industrial font-medium text-sm transition-colors ${
+                    form.regime === r.id
+                      ? 'bg-amber-500 text-slate-950 shadow-stamped'
+                      : 'bg-slate-700 text-slate-300 border border-slate-600'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -226,7 +209,7 @@ export function PricingSettings({ onClose }) {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4 sticky top-4">
+          <div className="bg-slate-800 border-2 border-amber-500 rounded-panel shadow-stamped p-4 sticky top-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-emerald-500/10">
                 <Calculator className="w-5 h-5 text-emerald-500" />
@@ -239,7 +222,7 @@ export function PricingSettings({ onClose }) {
 
             <div className="text-center p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-panel mb-4">
               <p className="text-3xl font-bold text-emerald-500">
-                R$ {hourlyRate.toFixed(2).replace('.', ',')}
+                {formatCurrency(hourlyRate)}
               </p>
               <p className="text-sm text-slate-400 mt-1">por hora</p>
             </div>
@@ -247,15 +230,19 @@ export function PricingSettings({ onClose }) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-400">Custo mensal:</span>
-                <span className="text-slate-200">R$ {(Number(form.dasValue) + Number(form.proLabore) + Number(form.fixedCosts)).toFixed(2).replace('.', ',')}</span>
+                <span className="text-slate-200">{formatCurrency(monthlyGross)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Com lucro ({form.profitMargin || 0}%):</span>
+                <span className="text-amber-500">{formatCurrency(monthlyNet)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Horas/mês:</span>
-                <span className="text-slate-200">{Number(form.workDays) * Number(form.workHours)}h</span>
+                <span className="text-slate-200">{totalHours}h</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Margem:</span>
-                <span className="text-amber-500">+{form.profitMargin}%</span>
+                <span className="text-slate-400">Custo/hora:</span>
+                <span className="text-slate-200">{totalHours > 0 ? formatCurrency(monthlyGross / totalHours) : '-'}</span>
               </div>
             </div>
 
