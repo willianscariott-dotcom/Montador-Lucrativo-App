@@ -1,8 +1,19 @@
+import { useState } from 'react'
 import { useProfile } from '../../hooks/useProfile'
-import { Phone, Mail, Crown, AlertCircle } from 'lucide-react'
+import { CatalogManager } from '../form/CatalogManager'
+import { Phone, Mail, Crown, AlertCircle, Bookmark, ChevronRight } from 'lucide-react'
 
 export function SettingsTab() {
   const { data: profile } = useProfile()
+  const [showCatalog, setShowCatalog] = useState(false)
+
+  if (showCatalog) {
+    return (
+      <div className="max-w-md mx-auto">
+        <CatalogManager onClose={() => setShowCatalog(false)} />
+      </div>
+    )
+  }
 
   const items = [
     {
@@ -16,6 +27,9 @@ export function SettingsTab() {
       value: profile?.email || 'Carregando...',
     },
   ]
+
+  const catalogServices = profile?.settings?.catalogServices?.length || 0
+  const catalogParts = profile?.settings?.catalogParts?.length || 0
 
   return (
     <div className="max-w-md mx-auto space-y-4">
@@ -40,6 +54,24 @@ export function SettingsTab() {
           )
         })}
       </div>
+
+      <button
+        onClick={() => setShowCatalog(true)}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/10">
+          <Bookmark className="w-5 h-5 text-amber-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Catálogo</p>
+          <p className="text-sm text-slate-400">
+            {catalogServices + catalogParts > 0
+              ? `${catalogServices} serviços, ${catalogParts} peças`
+              : 'Cadastre serviços e peças padrão'}
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
 
       <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
         <div className="flex items-center gap-3">

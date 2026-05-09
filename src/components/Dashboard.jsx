@@ -24,10 +24,7 @@ export default function Dashboard() {
   if (showQuoteBuilder) {
     return (
       <div className="flex flex-col min-h-screen bg-slate-900">
-        <DashboardHeader user={user} onLogout={handleLogout} />
-        <main className="flex-1 p-4">
-          <QuoteBuilder onBack={() => setShowQuoteBuilder(false)} />
-        </main>
+        <QuoteBuilder onBack={() => setShowQuoteBuilder(false)} />
       </div>
     )
   }
