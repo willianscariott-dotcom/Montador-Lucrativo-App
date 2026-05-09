@@ -1,11 +1,11 @@
 export function openWhatsApp(phone, message) {
-  if (!phone) {
-    alert('Número de WhatsApp não cadastrado')
-    return
+  const encoded = encodeURIComponent(message || '')
+  if (phone) {
+    const cleanPhone = phone.replace(/\D/g, '')
+    window.open(`https://wa.me/55${cleanPhone}?text=${encoded}`, '_blank')
+  } else {
+    window.open(`https://wa.me/?text=${encoded}`, '_blank')
   }
-  const cleanPhone = phone.replace(/\D/g, '')
-  const encoded = encodeURIComponent(message)
-  window.open(`https://wa.me/55${cleanPhone}?text=${encoded}`, '_blank')
 }
 
 export const messageTemplates = {
@@ -17,4 +17,7 @@ export const messageTemplates = {
 
   followUp: (clientName) =>
     `Olá ${clientName}! Tudo bem?\n\nEstou passando para saber se você teve alguma dúvida sobre o orçamento enviado. Fico à disposição para esclarecer qualquer questão!\n\nAtenciosamente,\nMontador Pro`,
+
+  referral: (friendName, code) =>
+    `Olá ${friendName}! 👋\n\nVocê conhece o Montador Pro? É o app que está revolucionando a vida de montadores!\n\nCom ele você consegue criar orçamentos profissionais, calcular o valor justo da sua hora de trabalho e muito mais.\n\nUse meu código de convite: *${code}*\n\nSe inscreva pelo link e ganhe benefícios exclusivos!\n\nBaixe agora no montador.pro\n\nAbraços!`,
 }

@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useProfile } from '../../hooks/useProfile'
 import { CatalogManager } from '../form/CatalogManager'
 import { PricingSettings } from '../form/PricingSettings'
-import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator } from 'lucide-react'
+import { ReferralDashboard } from '../form/ReferralDashboard'
+import { UpgradePlan } from '../form/UpgradePlan'
+import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift } from 'lucide-react'
 
 export function SettingsTab() {
   const { data: profile } = useProfile()
@@ -14,6 +16,14 @@ export function SettingsTab() {
 
   if (showView === 'pricing') {
     return <PricingSettings onClose={() => setShowView(null)} />
+  }
+
+  if (showView === 'referral') {
+    return <ReferralDashboard onBack={() => setShowView(null)} />
+  }
+
+  if (showView === 'upgrade') {
+    return <UpgradePlan onBack={() => setShowView(null)} />
   }
 
   const settings = profile?.settings || {}
@@ -107,12 +117,29 @@ export function SettingsTab() {
           </div>
         </div>
         {profile?.status !== 'active' && (
-          <button className="w-full mt-4 h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all">
+          <button
+            onClick={() => setShowView('upgrade')}
+            className="w-full mt-4 h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all"
+          >
             <TrendingUp className="w-5 h-5" />
             Fazer Upgrade
           </button>
         )}
       </div>
+
+      <button
+        onClick={() => setShowView('referral')}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-emerald-500/10">
+          <Gift className="w-6 h-6 text-emerald-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Indique e Ganhe</p>
+          <p className="text-sm text-slate-400">Compartilhe e receba recompensas</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <button
