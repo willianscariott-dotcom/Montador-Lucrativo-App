@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { useProfile } from '../../hooks/useProfile'
 import { CatalogManager } from '../form/CatalogManager'
-import { Phone, Mail, Crown, AlertCircle, Bookmark, ChevronRight } from 'lucide-react'
+import { PricingSettings } from '../form/PricingSettings'
+import { Phone, Mail, Crown, AlertCircle, Bookmark, ChevronRight, Calculator } from 'lucide-react'
 
 export function SettingsTab() {
   const { data: profile } = useProfile()
-  const [showCatalog, setShowCatalog] = useState(false)
+  const [showView, setShowView] = useState(null)
 
-  if (showCatalog) {
-    return (
-      <div className="max-w-md mx-auto">
-        <CatalogManager onClose={() => setShowCatalog(false)} />
-      </div>
-    )
+  if (showView === 'catalog') {
+    return <CatalogManager onClose={() => setShowView(null)} />
+  }
+
+  if (showView === 'pricing') {
+    return <PricingSettings onClose={() => setShowView(null)} />
   }
 
   const items = [
@@ -56,7 +57,21 @@ export function SettingsTab() {
       </div>
 
       <button
-        onClick={() => setShowCatalog(true)}
+        onClick={() => setShowView('pricing')}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-emerald-500/10">
+          <Calculator className="w-5 h-5 text-emerald-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Precificação</p>
+          <p className="text-sm text-slate-400">Configure seus custos e meta de lucro</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
+
+      <button
+        onClick={() => setShowView('catalog')}
         className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
       >
         <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/10">

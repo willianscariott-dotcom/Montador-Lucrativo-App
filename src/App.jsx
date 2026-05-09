@@ -31,12 +31,14 @@ export default function App() {
     )
   }
 
+  if (session) {
+    return <Dashboard />
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-0 sm:p-4">
-      <div className="w-full max-w-md min-h-screen sm:min-h-0 sm:max-h-[90vh] bg-slate-900 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4)] sm:rounded-panel overflow-hidden">
-        {session ? (
-          <Dashboard />
-        ) : authView === 'login' ? (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {authView === 'login' ? (
           <LoginPage onSwitch={() => setAuthView('signup')} />
         ) : (
           <SignupPage onSwitch={() => setAuthView('login')} />
