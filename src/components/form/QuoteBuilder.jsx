@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { useAuthStore } from '../../store/auth'
 import { useProfile } from '../../hooks/useProfile'
 import { useUnsaved } from '../Dashboard'
 import { generateQuotePDF } from '../../lib/pdfGenerator'
@@ -15,7 +14,6 @@ const emptyItem = {
 }
 
 export function QuoteBuilder({ onBack }) {
-  const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const { setHasUnsaved } = useUnsaved()
@@ -91,18 +89,22 @@ export function QuoteBuilder({ onBack }) {
 
       const totalAmount = validItems.reduce((sum, item) => sum + (Number(item.quantity) || 1) * (Number(item.unit_price) || 0), 0)
 
-      const tenantId = user?.id || user?.user_id
+      const { data: { session } } = await supabase.auth.getSession()
+      const tenantId = session?.user?.id
       if (!tenantId) throw new Error('Usuário não autenticado')
+
+      const quotePayload = {
+        tenant_id: tenantId,
+        client_name: clientName.trim(),
+        client_document: clientDocument.trim() || null,
+        total_amount: totalAmount,
+        status: 'draft',
+      }
+      console.log('Payload do Orçamento:', quotePayload)
 
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
-        .insert({
-          tenant_id: tenantId,
-          client_name: clientName.trim(),
-          client_document: clientDocument.trim() || null,
-          total_amount: totalAmount,
-          status: 'draft',
-        })
+        .insert(quotePayload)
         .select()
         .single()
 
@@ -116,6 +118,7 @@ export function QuoteBuilder({ onBack }) {
         quantity: Number(item.quantity) || 1,
         unit_price: Number(item.unit_price) || 0,
       }))
+      console.log('Payload dos Itens:', itemsToInsert)
 
       const { error: itemsError } = await supabase.from('quote_items').insert(itemsToInsert)
       if (itemsError) throw itemsError
