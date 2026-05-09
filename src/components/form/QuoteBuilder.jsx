@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/auth'
 import { useProfile } from '../../hooks/useProfile'
 import { useUnsaved } from '../Dashboard'
-import { generateQuotePDF } from '../../lib/pdfEngine'
+import { generateQuotePDF } from '../../lib/pdfGenerator'
 import { Plus, Trash2, Save, Download, ArrowLeft, Wrench, Package, X, Bookmark } from 'lucide-react'
 
 const emptyItem = {
@@ -29,6 +29,16 @@ export function QuoteBuilder({ onBack }) {
 
   const catalogServices = profile?.settings?.catalogServices || []
   const catalogParts = profile?.settings?.catalogParts || []
+  const pricing = profile?.settings?.pricing || {}
+  const hourlyRate = (() => {
+    const das = Number(pricing.dasValue) || 0
+    const proLabore = Number(pricing.proLabore) || 0
+    const fixedCosts = Number(pricing.fixedCosts) || 0
+    const profitMargin = Number(pricing.profitMargin) || 0
+    const days = Number(pricing.workDays) || 22
+    const hours = Number(pricing.workHours) || 8
+    return days * hours > 0 ? (das + proLabore + fixedCosts) * (1 + profitMargin / 100) / (days * hours) : 0
+  })()
 
   useEffect(() => {
     const hasData = items.some((i) => i.description || i.unit_price) || clientName
@@ -303,17 +313,25 @@ export function QuoteBuilder({ onBack }) {
                         className="w-full h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
                       />
                     </div>
-                    <div>
+                    <div className="relative">
                       <label className="block mb-1 text-xs text-slate-400">Valor Unit. (R$)</label>
                       <input
                         type="number"
                         value={item.unit_price}
                         onChange={(e) => updateItem(index, 'unit_price', e.target.value)}
+                        onFocus={() => {
+                          if (item.type === 'service' && !item.unit_price && hourlyRate > 0) {
+                            updateItem(index, 'unit_price', hourlyRate.toFixed(2))
+                          }
+                        }}
                         min="0"
                         step="0.01"
                         placeholder="0,00"
                         className="w-full h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                       />
+                      {item.type === 'service' && !item.unit_price && hourlyRate > 0 && (
+                        <span className="absolute right-12 top-7 text-xs text-amber-500">std: {formatCurrency(hourlyRate)}</span>
+                      )}
                     </div>
                   </div>
 

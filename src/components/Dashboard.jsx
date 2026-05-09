@@ -6,6 +6,7 @@ import { navItems } from './navItems'
 import { HomeTab } from './tabs/HomeTab'
 import { QuotesTab } from './tabs/QuotesTab'
 import { ClientsTab } from './tabs/ClientsTab'
+import { DocumentsTab } from './tabs/DocumentsTab'
 import { SettingsTab } from './tabs/SettingsTab'
 import { QuoteBuilder } from './form/QuoteBuilder'
 import { Loader2 } from 'lucide-react'
@@ -66,6 +67,8 @@ export default function Dashboard() {
         return <QuotesTab onNewQuote={() => setShowQuoteBuilder(true)} />
       case 'clients':
         return <ClientsTab />
+      case 'documents':
+        return <DocumentsTab />
       case 'settings':
         return <SettingsTab />
       default:
