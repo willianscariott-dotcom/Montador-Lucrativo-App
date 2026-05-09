@@ -97,8 +97,7 @@ export function LoginPage({ onSwitch }) {
   )
 }
 
-export function SignupPage({ onSwitch }) {
-  const setSession = useAuthStore((s) => s.setSession)
+export function SignupPage({ onSwitch, defaultView }) {
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -189,6 +188,12 @@ export function SignupPage({ onSwitch }) {
             Clique no link para ativar sua conta.
           </p>
           <p className="mt-4 text-xs text-slate-500">Verifique também a caixa de spam.</p>
+          <button
+            onClick={onSwitch}
+            className="mt-8 w-full h-14 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all"
+          >
+            Já confirmei, ir para o Login
+          </button>
         </div>
       </div>
     )
