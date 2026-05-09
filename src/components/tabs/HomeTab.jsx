@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import { Plus, TrendingUp, TrendingDown, Target, DollarSign, ArrowUpRight, ArrowDownRight, X } from 'lucide-react'
 
+const EXPENSE_CATEGORIES = ['Gasolina', 'Alimentação', 'Material de Montagem', 'Manutenção Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
+const INCOME_CATEGORIES = ['Serviço Montagem', 'Serviço Instalação', 'Serviço Avulso', 'Receita Extra']
+const ACCOUNTS = ['Carteira', 'Conta Banco', 'Pix']
+
 export function HomeTab() {
   const { data: profile } = useProfile()
   const updateSettings = useUpdateSettings()
@@ -146,7 +150,7 @@ export function HomeTab() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-100">{t.description}</p>
-                    <p className="text-xs text-slate-500">{new Date(t.date).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-xs text-slate-500">{t.category} · {t.account} · {new Date(t.date).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
                 <span className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -175,15 +179,22 @@ export function HomeTab() {
 function TransactionModal({ type, onClose, onSave }) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [account, setAccount] = useState('Carteira')
+  const [category, setCategory] = useState('')
+
+  const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!description.trim() || !amount) return
+    if (!description.trim() || !amount || !category) return
     onSave({
       type,
       description: description.trim(),
       amount: Number(amount),
-      date: new Date().toISOString(),
+      date: new Date(date).toISOString(),
+      account,
+      category,
     })
     onClose()
   }
@@ -204,7 +215,7 @@ function TransactionModal({ type, onClose, onSave }) {
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block mb-1.5 text-sm font-medium text-slate-300">Descrição</label>
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Descrição *</label>
             <input
               type="text"
               value={description}
@@ -215,7 +226,7 @@ function TransactionModal({ type, onClose, onSave }) {
             />
           </div>
           <div>
-            <label className="block mb-1.5 text-sm font-medium text-slate-300">Valor (R$)</label>
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Valor (R$) *</label>
             <input
               type="number"
               value={amount}
@@ -226,6 +237,45 @@ function TransactionModal({ type, onClose, onSave }) {
               className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               required
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-slate-300">Data *</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-slate-300">Conta *</label>
+              <select
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
+                required
+              >
+                {ACCOUNTS.map((acc) => (
+                  <option key={acc} value={acc}>{acc}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Categoria *</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
+              required
+            >
+              <option value="">Selecione...</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"

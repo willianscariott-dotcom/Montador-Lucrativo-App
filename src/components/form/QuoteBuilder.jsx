@@ -95,6 +95,7 @@ export function QuoteBuilder({ onBack }) {
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
         .insert({
+          tenant_id: user?.id,
           client_name: clientName.trim(),
           client_document: clientDocument.trim() || null,
           total_amount: total,
@@ -107,6 +108,7 @@ export function QuoteBuilder({ onBack }) {
 
       const itemsToInsert = validItems.map((item) => ({
         quote_id: quote.id,
+        tenant_id: user?.id,
         type: item.type,
         description: item.description.trim(),
         quantity: Number(item.quantity) || 1,
