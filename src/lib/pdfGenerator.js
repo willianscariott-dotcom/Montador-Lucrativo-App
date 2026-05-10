@@ -6,6 +6,20 @@ const accentColor = [251, 191, 36]
 const emeraldColor = [5, 150, 105]
 const slate300 = [203, 213, 225]
 
+const DEFAULT_WARRANTY = {
+  intro: 'Certificamos que o servico de montagem realizado para o cliente [NOME DO CLIENTE] possui garantia tecnica de 90 (noventa) dias, a contar da data de realizacao do servico [DATA], conforme previsto no Codigo de Defesa do Consumidor.',
+  covers: [
+    'Falhas na execucao da montagem (ex: portas desalinhadas por falta de regulagem, pecas soltas).',
+    'Danos causados diretamente pelo montador durante a execucao do servico.',
+  ],
+  notCovers: [
+    'Defeitos de fabricacao do movel, pecas empenadas ou falta de ferragens na embalagem original.',
+    'Danos causados por mau uso, umidade, infiltracoes ou uso de produtos de limpeza inadequados.',
+    'Desalinhamentos futuros causados por piso irregular ou sobrecarga de peso.',
+    'Danos causados se o movel for arrastado, mudado de lugar ou desmontado por terceiros.',
+  ],
+}
+
 function addHeader(doc, title, subtitle = '') {
   doc.setFillColor(...primaryColor)
   doc.rect(0, 0, 210, 45, 'F')
@@ -159,7 +173,7 @@ function addTermsBlock(doc, yPos) {
   const terms = [
     '• Garantia de 90 dias para servicos realizados.',
     '• Peas/materiais seguem garantia do fabricante.',
-    '•Orcamento valido por 15 dias.',
+    '• Orcamento valido por 15 dias.',
     '• Pagamento via PIX ou transferencia bancaria.',
   ]
   terms.forEach((term, i) => {
@@ -233,6 +247,8 @@ export function generateReceiptPDF(data) {
 export function generateWarrantyPDF(data) {
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
+  const warrantyConfig = data.warrantySettings || DEFAULT_WARRANTY
+
   addHeader(doc, 'TERMO DE GARANTIA', data.profileName || 'Montador Lucrativo')
 
   const warrantyNumber = `GAR${Date.now().toString().slice(-8)}`
@@ -288,7 +304,9 @@ export function generateWarrantyPDF(data) {
 
   yPos += 28
 
-  const introText = `Certificamos que o servico de montagem realizado para o cliente ${data.clientName || '[NOME DO CLIENTE]'} possui garantia tecnica de 90 (noventa) dias, a contar da data de realizacao do servico ${data.serviceDate || new Date().toLocaleDateString('pt-BR')}, conforme previsto no Codigo de Defesa do Consumidor.`
+  const introText = (warrantyConfig.intro || DEFAULT_WARRANTY.intro)
+    .replace('[NOME DO CLIENTE]', data.clientName || '[NOME DO CLIENTE]')
+    .replace('[DATA]', data.serviceDate || new Date().toLocaleDateString('pt-BR'))
 
   const wrappedIntro = doc.splitTextToSize(introText, 182)
   doc.setFont('helvetica', 'normal')
@@ -300,17 +318,12 @@ export function generateWarrantyPDF(data) {
   doc.text(wrappedIntro, 16, yPos + 6)
   yPos += introBlockHeight + 8
 
+  const coverItems = (warrantyConfig.covers || DEFAULT_WARRANTY.covers)
+  const notCoverItems = (warrantyConfig.notCovers || DEFAULT_WARRANTY.notCovers)
+
   const coverBlock = [
-    { title: 'O QUE ESTA GARANTIA COBRE:', color: emeraldColor, items: [
-      'Falhas na execucao da montagem (ex: portas desalinhadas por falta de regulagem, pecas soltas).',
-      'Danos causados diretamente pelo montador durante a execucao do servico.',
-    ]},
-    { title: 'O QUE ESTA GARANTIA NAO COBRE:', color: [239, 68, 68], items: [
-      'Defeitos de fabricacao do movel, pecas empenadas ou falta de ferragens na embalagem original.',
-      'Danos causados por mau uso, umidade, infiltracoes ou uso de produtos de limpeza inadequados.',
-      'Desalinhamentos futuros causados por piso irregular ou sobrecarga de peso.',
-      'Danos causados se o movel for arrastado, mudado de lugar ou desmontado por terceiros.',
-    ]},
+    { title: 'O QUE ESTA GARANTIA COBRE:', color: emeraldColor, items: coverItems },
+    { title: 'O QUE ESTA GARANTIA NAO COBRE:', color: [239, 68, 68], items: notCoverItems },
   ]
 
   coverBlock.forEach((section) => {
@@ -356,3 +369,5 @@ export function generateWarrantyPDF(data) {
   doc.save(fileName)
   return fileName
 }
+
+export { DEFAULT_WARRANTY }

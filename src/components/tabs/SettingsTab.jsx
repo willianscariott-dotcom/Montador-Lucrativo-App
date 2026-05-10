@@ -4,7 +4,7 @@ import { CatalogManager } from '../form/CatalogManager'
 import { PricingSettings } from '../form/PricingSettings'
 import { ReferralDashboard } from '../form/ReferralDashboard'
 import { UpgradePlan } from '../form/UpgradePlan'
-import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift, Tag, Wallet, Bell, Link2, X, Plus } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift, Tag, Wallet, Bell, Link2, X, Plus, FileText } from 'lucide-react'
 
 const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentação', 'Material de Montagem', 'Manutenção Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
 const DEFAULT_INCOME_CATEGORIES = ['Serviço Montagem', 'Serviço Instalação', 'Serviço Avulso', 'Receita Extra']
@@ -25,6 +25,7 @@ export function SettingsTab() {
   const [showAccounts, setShowAccounts] = useState(false)
   const [showLimits, setShowLimits] = useState(false)
   const [showReminder, setShowReminder] = useState(false)
+  const [showWarranty, setShowWarranty] = useState(false)
 
   if (showView === 'catalog') {
     return <CatalogManager onClose={() => setShowView(null)} />
@@ -58,6 +59,10 @@ export function SettingsTab() {
     return <ReminderManager onClose={() => setShowReminder(false)} />
   }
 
+  if (showWarranty) {
+    return <WarrantyManager onClose={() => setShowWarranty(false)} />
+  }
+
   const settings = profile?.settings || {}
   const pricing = settings.pricing || {}
   const catalogServices = profile?.settings?.catalogServices?.length || 0
@@ -67,6 +72,7 @@ export function SettingsTab() {
   const accounts = (settings.accounts || DEFAULT_ACCOUNTS).length
   const annualLimit = settings.annualLimit || {}
   const reminder = settings.monthlyReminder || {}
+  const warranty = settings.warranty || {}
 
   const calculateHourlyRate = () => {
     const das = Number(pricing.dasValue) || 0
@@ -256,6 +262,20 @@ export function SettingsTab() {
           <p className="text-sm text-slate-400">
             {reminder.enabled ? reminder.text || 'Lembrete ativo' : 'Configure um lembrete mensal'}
           </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
+
+      <button
+        onClick={() => setShowWarranty(true)}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-emerald-500/10">
+          <FileText className="w-6 h-6 text-emerald-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Texto de Garantia PDF</p>
+          <p className="text-sm text-slate-400">Personalize o Termo de Garantia</p>
         </div>
         <ChevronRight className="w-5 h-5 text-slate-500" />
       </button>
@@ -551,14 +571,112 @@ function ReminderManager({ onClose }) {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ex: Verificar DAS até dia 20, coletar notas fiscais..."
+          placeholder="Ex: Verificar DAS ate dia 20, coletar notas fiscais..."
           className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
         />
       </div>
 
       <button onClick={save} className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
-        Salvar Alterações
+        Salvar Alteracoes
       </button>
+    </div>
+  )
+}
+
+function WarrantyManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateSettings = useUpdateSettings()
+  const settings = profile?.settings || {}
+  const warranty = settings.warranty || {}
+
+  const DEFAULT_INTRO = 'Certificamos que o servico de montagem realizado para o cliente [NOME DO CLIENTE] possui garantia tecnica de 90 (noventa) dias, a contar da data de realizacao do servico [DATA], conforme previsto no Codigo de Defesa do Consumidor.'
+  const DEFAULT_COVERS = 'Falhas na execucao da montagem (ex: portas desalinhadas por falta de regulagem, pecas soltas).\nDanos causados diretamente pelo montador durante a execucao do servico.'
+  const DEFAULT_NOT_COVERS = 'Defeitos de fabricacao do movel, pecas empenadas ou falta de ferragens na embalagem original.\nDanos causados por mau uso, umidade, infiltracoes ou uso de produtos de limpeza inadequados.\nDesalinhamentos futuros causados por piso irregular ou sobrecarga de peso.\nDanos causados se o movel for arrastado, mudado de lugar ou desmontado por terceiros.'
+
+  const [intro, setIntro] = useState(warranty.intro || DEFAULT_INTRO)
+  const [covers, setCovers] = useState((warranty.covers || []).join('\n') || DEFAULT_COVERS)
+  const [notCovers, setNotCovers] = useState((warranty.notCovers || []).join('\n') || DEFAULT_NOT_COVERS)
+
+  const save = () => {
+    updateSettings.mutate({
+      warranty: {
+        intro: intro.trim(),
+        covers: covers.split('\n').filter((l) => l.trim()),
+        notCovers: notCovers.split('\n').filter((l) => l.trim()),
+      },
+    })
+    onClose()
+  }
+
+  const reset = () => {
+    setIntro(DEFAULT_INTRO)
+    setCovers(DEFAULT_COVERS)
+    setNotCovers(DEFAULT_NOT_COVERS)
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Texto de Garantia PDF</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <p className="text-sm text-slate-400">Personalize o conteudo do Termo de Garantia gerado no PDF. Cada linha em "O que cobre" e "O que nao cobre" vira um bullet point.</p>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4 space-y-4">
+        <div>
+          <label className="block mb-2 text-sm font-bold text-slate-200">Texto de Introducao</label>
+          <p className="text-xs text-slate-500 mb-2">Use [NOME DO CLIENTE] e [DATA] como variaveis.</p>
+          <textarea
+            value={intro}
+            onChange={(e) => setIntro(e.target.value)}
+            rows={4}
+            className="w-full px-3 py-2 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Texto de introducao..."
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-bold text-emerald-400">O que a Garantia Cobre</label>
+          <p className="text-xs text-slate-500 mb-2">Um item por linha.</p>
+          <textarea
+            value={covers}
+            onChange={(e) => setCovers(e.target.value)}
+            rows={4}
+            className="w-full px-3 py-2 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Item 1..."
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 text-sm font-bold text-red-400">O que a Garantia NAO Cobre</label>
+          <p className="text-xs text-slate-500 mb-2">Um item por linha.</p>
+          <textarea
+            value={notCovers}
+            onChange={(e) => setNotCovers(e.target.value)}
+            rows={5}
+            className="w-full px-3 py-2 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none"
+            placeholder="Item 1..."
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={reset}
+          className="h-12 px-4 flex items-center justify-center gap-2 text-sm font-medium text-slate-300 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
+        >
+          Restaurar Padrao
+        </button>
+        <button
+          onClick={save}
+          className="flex-1 h-12 flex items-center justify-center gap-2 text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
+        >
+          Salvar Alteracoes
+        </button>
+      </div>
     </div>
   )
 }

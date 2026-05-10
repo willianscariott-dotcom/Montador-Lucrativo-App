@@ -97,6 +97,20 @@ export function HomeTab() {
 
   const progressPercent = monthlyTarget > 0 ? Math.min((totalMonthIncome / monthlyTarget) * 100, 100) : 0
 
+  const metaBatida = totalMonthIncome >= monthlyTarget && monthlyTarget > 0
+  const remainingToTarget = Math.max(0, monthlyTarget - totalMonthIncome)
+  const daysPerMonth = Number(pricing.workDays) || 22
+  const hoursPerDay = Number(pricing.workHours) || 8
+  const hourlyRate = (() => {
+    const das = Number(pricing.dasValue) || 0
+    const proLabore = Number(pricing.proLabore) || 0
+    const fixedCosts = Number(pricing.fixedCosts) || 0
+    const profitMargin = Number(pricing.profitMargin) || 0
+    return daysPerMonth * hoursPerDay > 0 ? (das + proLabore + fixedCosts) * (1 + profitMargin / 100) / (daysPerMonth * hoursPerDay) : 0
+  })()
+  const dailyGoal = hourlyRate * hoursPerDay
+  const daysLeft = dailyGoal > 0 ? Math.ceil(remainingToTarget / dailyGoal) : 0
+
   const annualLimit = settings.annualLimit || {}
   const regime = annualLimit.regime || 'MEI'
   const limit = Number(annualLimit.value) || (regime === 'MEI' ? 81600 : regime === 'Simples' ? 3600000 : 0)
@@ -122,7 +136,7 @@ export function HomeTab() {
   return (
     <div className="max-w-7xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-100">Visão Geral</h2>
+        <h2 className="text-lg font-bold text-slate-100">Visao Geral</h2>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
             <ChevronLeft className="w-5 h-5 text-slate-300" />
@@ -140,13 +154,14 @@ export function HomeTab() {
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Saldo Geral (Acumulado)</p>
-              <p className={`text-2xl font-bold ${generalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {formatCurrency(generalBalance)}
+              <p className="text-sm text-slate-400">Saldo do Mes</p>
+              <p className={`text-2xl font-bold ${monthBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {formatCurrency(monthBalance)}
               </p>
+              <p className="text-xs text-slate-500 mt-1">Balancalo mensal - sem recorrentes</p>
             </div>
-            <div className={`w-12 h-12 flex items-center justify-center rounded-industrial ${generalBalance >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-              {generalBalance >= 0 ? (
+            <div className={`w-12 h-12 flex items-center justify-center rounded-industrial ${monthBalance >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+              {monthBalance >= 0 ? (
                 <TrendingUp className="w-6 h-6 text-emerald-500" />
               ) : (
                 <TrendingDown className="w-6 h-6 text-red-500" />
@@ -172,7 +187,7 @@ export function HomeTab() {
         </div>
 
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
-          <p className="text-sm text-slate-400">Receitas</p>
+          <p className="text-sm text-slate-400">Receitas do Mes</p>
           <p className="text-xl font-bold text-slate-100">{formatCurrency(totalMonthIncome)}</p>
           {recurringIncome > 0 && (
             <p className="text-xs text-emerald-500 mt-1">+ {formatCurrency(recurringIncome)} recorrentes</p>
@@ -180,11 +195,28 @@ export function HomeTab() {
         </div>
 
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
-          <p className="text-sm text-slate-400">Despesas</p>
+          <p className="text-sm text-slate-400">Despesas do Mes</p>
           <p className="text-xl font-bold text-slate-100">{formatCurrency(totalMonthExpense)}</p>
           {recurringExpense > 0 && (
             <p className="text-xs text-red-500 mt-1">+ {formatCurrency(recurringExpense)} recorrentes</p>
           )}
+        </div>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center rounded-industrial bg-emerald-500/10">
+              <DollarSign className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-100">Saldo Geral (Acumulado)</p>
+              <p className="text-sm text-slate-400">Todas receitas - despesas de todos os meses</p>
+            </div>
+          </div>
+          <p className={`text-xl font-bold ${generalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            {formatCurrency(generalBalance)}
+          </p>
         </div>
       </div>
 
@@ -196,20 +228,29 @@ export function HomeTab() {
             </div>
             <div>
               <p className="font-bold text-slate-100">Meta de Faturamento</p>
-              <p className="text-sm text-slate-400">Baseado na sua precificação</p>
+              <p className="text-sm text-slate-400">Baseado na sua precificacao</p>
             </div>
           </div>
           <p className="text-sm font-bold text-amber-500">{formatCurrency(monthlyTarget)}</p>
         </div>
         <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500 rounded-full"
+            className={`h-full transition-all duration-500 rounded-full ${metaBatida ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
         <p className="text-sm text-slate-400 mt-2 text-right">
           {progressPercent.toFixed(1)}% atingido ({formatCurrency(totalMonthIncome)})
         </p>
+        {metaBatida ? (
+          <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-industrial">
+            <p className="text-center font-bold text-emerald-400 text-sm">Parabens! Voce bateu a meta do mes!</p>
+          </div>
+        ) : daysLeft > 0 ? (
+          <p className="text-sm text-slate-500 mt-2 text-center">
+            Faltam aprox. <span className="font-bold text-amber-500">{daysLeft}</span> dias de trabalho
+          </p>
+        ) : null}
       </div>
 
       {limit > 0 && (
@@ -263,13 +304,13 @@ export function HomeTab() {
           <Bell className="w-5 h-5 text-amber-500" />
           <div>
             <p className="text-sm font-bold text-amber-500">Lembrete Mensal</p>
-            <p className="text-sm text-slate-300">{reminder.text || 'Verificar pendências mensais'}</p>
+            <p className="text-sm text-slate-300">{reminder.text || 'Verificar pendencias mensais'}</p>
           </div>
         </div>
       )}
 
       <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
-        <h3 className="font-bold text-slate-100 mb-3">Transações do Mês</h3>
+        <h3 className="font-bold text-slate-100 mb-3">Transacoes do Mes</h3>
         {monthTransactions.length === 0 && activeRecurring.length === 0 ? (
           <div className="text-center py-8">
             <DollarSign className="w-8 h-8 mx-auto text-slate-500 mb-2" />
