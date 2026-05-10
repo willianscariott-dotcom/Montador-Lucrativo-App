@@ -40,6 +40,8 @@ export function HomeTab() {
   const [showModal, setShowModal] = useState(null)
   const [showLinks, setShowLinks] = useState(false)
 
+  const allTransactions = settings.transactions || []
+
   const monthTransactions = transactions.filter((t) => {
     const date = new Date(t.date)
     return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
@@ -70,7 +72,17 @@ export function HomeTab() {
 
   const totalMonthIncome = totalIncome + recurringIncome
   const totalMonthExpense = totalExpense + recurringExpense
-  const balance = totalMonthIncome - totalMonthExpense
+  const monthBalance = totalMonthIncome - totalMonthExpense
+
+  const generalBalance = (() => {
+    const allIncome = allTransactions
+      .filter((t) => t.type === 'income')
+      .reduce((s, t) => s + Number(t.amount), 0)
+    const allExpense = allTransactions
+      .filter((t) => t.type === 'expense')
+      .reduce((s, t) => s + Number(t.amount), 0)
+    return allIncome - allExpense
+  })()
 
   const monthlyTarget = (() => {
     const das = Number(pricing.dasValue) || 0
@@ -128,13 +140,13 @@ export function HomeTab() {
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Saldo do Mês</p>
-              <p className={`text-2xl font-bold ${balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {formatCurrency(balance)}
+              <p className="text-sm text-slate-400">Saldo Geral (Acumulado)</p>
+              <p className={`text-2xl font-bold ${generalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                {formatCurrency(generalBalance)}
               </p>
             </div>
-            <div className={`w-12 h-12 flex items-center justify-center rounded-industrial ${balance >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-              {balance >= 0 ? (
+            <div className={`w-12 h-12 flex items-center justify-center rounded-industrial ${generalBalance >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+              {generalBalance >= 0 ? (
                 <TrendingUp className="w-6 h-6 text-emerald-500" />
               ) : (
                 <TrendingDown className="w-6 h-6 text-red-500" />
@@ -314,7 +326,7 @@ export function HomeTab() {
           type={showModal}
           onClose={() => setShowModal(null)}
           onSave={(tx) => {
-            const newTransactions = [...transactions, { ...tx, id: Date.now() }]
+            const newTransactions = [...allTransactions, { ...tx, id: Date.now() }]
             updateSettings.mutate({ transactions: newTransactions })
           }}
           expenseCategories={expenseCategories}
@@ -322,8 +334,7 @@ export function HomeTab() {
           accounts={accounts}
           recurringTransactions={recurringTransactions}
           onSaveRecurring={(newRecurring) => {
-            const nonRecurring = (settings.transactions || []).filter((t) => t.recurring !== true)
-            updateSettings.mutate({ transactions: [...nonRecurring, ...newRecurring] })
+            updateSettings.mutate({ transactions: newRecurring })
           }}
         />
       )}
