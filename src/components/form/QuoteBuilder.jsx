@@ -6,9 +6,20 @@ import { useUnsaved } from '../Dashboard'
 import { generateQuotePDF } from '../../lib/pdfGenerator'
 import { Plus, Trash2, Save, Download, ArrowLeft, Wrench, Package, X, Bookmark, Calendar } from 'lucide-react'
 
+const DEFAULT_SERVICES = [
+  'Montagem Roupeiro', 'Montagem Comoda', 'Montagem Cozinha', 'Montagem Balcao',
+  'Montagem Painel', 'Instalacao TV', 'Cama Casal', 'Cama Solteiro', 'Berco',
+]
+
+const DEFAULT_PARTS = [
+  'Dobradicas', 'Corredicas Ocultas', 'Corredicas Telescopicas', 'Parafusos',
+  'Buchas', 'Puxador', 'Trilho Alumínio',
+]
+
 const emptyItem = {
   type: 'service',
   description: '',
+  details: '',
   quantity: 1,
   unit_price: '',
 }
@@ -237,10 +248,204 @@ export function QuoteBuilder({ onBack }) {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-slate-400 uppercase">Itens do Orçamento</h3>
+<div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase mb-3">Adicionar Item ao Orcamento</h3>
+            <div className="space-y-3">
+              {items.map((item, index) => (
+                <div key={index} className="p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-slate-400">Item {index + 1}</span>
+                    {items.length > 1 && (
+                      <button
+                        onClick={() => removeItem(index)}
+                        className="w-8 h-8 flex items-center justify-center rounded-industrial bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="block mb-1 text-xs text-slate-400">Tipo</label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateItem(index, 'type', 'service')}
+                              className={`flex-1 h-10 flex items-center justify-center gap-2 rounded-industrial border transition-colors ${
+                                item.type === 'service'
+                                  ? 'bg-amber-500/20 border-amber-500 text-amber-500'
+                                  : 'bg-slate-800 border-slate-600 text-slate-400'
+                              }`}
+                            >
+                              <Wrench className="w-4 h-4" />
+                              <span className="text-xs font-medium">Servico</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateItem(index, 'type', 'material')}
+                              className={`flex-1 h-10 flex items-center justify-center gap-2 rounded-industrial border transition-colors ${
+                                item.type === 'material'
+                                  ? 'bg-amber-500/20 border-amber-500 text-amber-500'
+                                  : 'bg-slate-800 border-slate-600 text-slate-400'
+                              }`}
+                            >
+                              <Package className="w-4 h-4" />
+                              <span className="text-xs font-medium">Material</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block mb-1 text-xs text-slate-400">Servico/Item</label>
+                          <div className="flex gap-2">
+                            <select
+                              value={item.description}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                if (val === '__custom__') {
+                                  updateItem(index, 'description', '')
+                                } else {
+                                  updateItem(index, 'description', val)
+                                }
+                              }}
+                              className="flex-1 h-10 px-2 text-xs bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+                            >
+                              <option value="">Selecione...</option>
+                              {item.type === 'service' ? (
+                                <>
+                                  {DEFAULT_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                  <option value="__custom__">+ Avulso...</option>
+                                </>
+                              ) : (
+                                <>
+                                  {DEFAULT_PARTS.map((p) => <option key={p} value={p}>{p}</option>)}
+                                  <option value="__custom__">+ Avulso...</option>
+                                </>
+                              )}
+                            </select>
+                            <button
+                              onClick={() => {
+                                setCatalogTab(item.type === 'service' ? 'services' : 'parts')
+                                openCatalogModal(index)
+                              }}
+                              className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                            >
+                              <Bookmark className="w-4 h-4 text-amber-500" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {(item.description === '__custom__' || !item.description) && (
+                      <div className="sm:col-span-2">
+                        <label className="block mb-1 text-xs text-slate-400">Descricao (digite manualmente)</label>
+                        <input
+                          type="text"
+                          value={item.description === '__custom__' ? '' : item.description}
+                          onChange={(e) => updateItem(index, 'description', e.target.value)}
+                          placeholder="Digite a descricao do item"
+                          className="w-full h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    )}
+                    <div className="sm:col-span-2">
+                      <label className="block mb-1 text-xs text-slate-400">Detalhes/Especificacao (Opcional)</label>
+                      <input
+                        type="text"
+                        value={item.details || ''}
+                        onChange={(e) => updateItem(index, 'details', e.target.value)}
+                        placeholder="Ex: Corrediça telescópica 45cm, Porto personalizado..."
+                        className="w-full h-10 px-3 text-sm bg-slate-600 border border-slate-500 rounded-industrial text-slate-300 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-xs text-slate-400">Qtd</label>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                        min="1"
+                        className="w-full h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className="block mb-1 text-xs text-slate-400">Valor Unit. (R$)</label>
+                      <input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) => updateItem(index, 'unit_price', e.target.value)}
+                        onFocus={() => {
+                          if (item.type === 'service' && !item.unit_price && hourlyRate > 0) {
+                            updateItem(index, 'unit_price', hourlyRate.toFixed(2))
+                          }
+                        }}
+                        min="0"
+                        step="0.01"
+                        placeholder="0,00"
+                        className="w-full h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                      {item.type === 'service' && !item.unit_price && hourlyRate > 0 && (
+                        <span className="absolute right-12 top-7 text-xs text-amber-500">std: {formatCurrency(hourlyRate)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 text-right">
+                    <span className="text-xs text-slate-400">Subtotal: </span>
+                    <span className="text-sm font-bold text-amber-500">
+                      {formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            <button
+              onClick={addItem}
+              className="w-full mt-3 h-12 flex items-center justify-center gap-2 text-sm font-medium text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-industrial hover:bg-amber-500/20 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Adicionar Item
+            </button>
+          </div>
+
+          <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
+            <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Itens Adicionados</h3>
+            <div className="border-t border-slate-600 my-3" />
+            {items.filter((i) => i.description?.trim() && i.unit_price).length === 0 ? (
+              <div className="text-center py-6">
+                <Package className="w-8 h-8 mx-auto text-slate-500 mb-2" />
+                <p className="text-sm text-slate-400">Nenhum item adicionado ainda</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {items.filter((i) => i.description?.trim() && i.unit_price).map((item, index) => {
+                  const realIndex = items.indexOf(item)
+                  return (
+                    <div key={realIndex} className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-6 h-6 flex items-center justify-center rounded-industrial text-xs font-bold ${item.type === 'service' ? 'bg-amber-500/20 text-amber-500' : 'bg-purple-500/20 text-purple-400'}`}>
+                            {item.type === 'service' ? <Wrench className="w-3 h-3" /> : <Package className="w-3 h-3" />}
+                          </span>
+                          <div>
+                            <p className="text-sm font-medium text-slate-100">{item.description}</p>
+                            {item.details && <p className="text-xs text-slate-500 italic">{item.details}</p>}
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">x{item.quantity} · {formatCurrency(Number(item.unit_price))} · subtotal {formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}</p>
+                      </div>
+                      <button onClick={() => removeItem(realIndex)} className="w-8 h-8 flex items-center justify-center rounded-industrial bg-red-500/10 hover:bg-red-500/20 transition-colors">
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
             <div className="space-y-3">
               {items.map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
@@ -392,7 +597,6 @@ export function QuoteBuilder({ onBack }) {
             </button>
           </div>
         </div>
-      </div>
 
       {catalogModal.open && (
         <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-end sm:items-center justify-center p-4">

@@ -49,6 +49,14 @@
 - Perfil completo via ProfileManager (nome, telefone, avatar upload base64, endereço, CNPJ, Instagram, chave Pix)
 - Google Calendar botão no QuoteBuilder e no QuotesTab (draft + approved)
 - useUpdateProfile hook em useProfile.js
+- Meta de Faturamento condicional: mês futuro oculta barra/dias, mês passado mostra "Fechamento", mês atual mostra dias restantes
+- TransactionModal: editing suporta recorrência (checkbox + repeatMonths visível), cria múltiplas instâncias no JSONB
+- HomeTab: FinanceSettingsModal com botões de Contas e Categorias via ícone SlidersHorizontal no header
+- QuoteBuilder: DEFAULT_SERVICES + DEFAULT_PARTS pré-populados, select com Avulso, campo detalhes/especificação em todos os itens, layout reorganizado com "Itens Adicionados" e linha divisória, detalhes no PDF
+- Transações recorrentes: filtro exato por mês/ano (sem acumulação), soma sem multiplier
+- Transações: botões editar/excluir com Pencil + Trash2 em cada item
+- Desmarcar Pago em QuotesTab: status volta para 'approved', remove transação com quote_id do JSONB
+- ProfileManager: pb-24 + mb-24 para não ficar atrás da BottomNav
 
 ### In Progress
 - Admin Dashboard em /admin

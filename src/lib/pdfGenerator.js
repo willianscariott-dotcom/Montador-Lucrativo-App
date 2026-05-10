@@ -86,14 +86,17 @@ export function generateQuotePDF(quote, items, profile) {
 
   yPos += 28
 
-  const tableData = items.map((item, index) => [
-    String(index + 1),
-    item.description,
-    item.type === 'service' ? 'Servico' : 'Material',
-    String(item.quantity),
-    `R$ ${Number(item.unit_price).toFixed(2).replace('.', ',')}`,
-    `R$ ${(item.quantity * item.unit_price).toFixed(2).replace('.', ',')}`,
-  ])
+  const tableData = items.map((item, index) => {
+    const descText = item.description + (item.details ? `\n${item.details}` : '')
+    return [
+      String(index + 1),
+      descText,
+      item.type === 'service' ? 'Servico' : 'Material',
+      String(item.quantity),
+      `R$ ${Number(item.unit_price).toFixed(2).replace('.', ',')}`,
+      `R$ ${(item.quantity * item.unit_price).toFixed(2).replace('.', ',')}`,
+    ]
+  })
 
   autoTable(doc, {
     startY: yPos,

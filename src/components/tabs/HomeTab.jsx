@@ -3,7 +3,7 @@ import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import {
   TrendingUp, TrendingDown, Target, DollarSign, ArrowUpRight,
   ArrowDownRight, X, ChevronLeft, ChevronRight, Link2, Bell, Repeat, Eye, EyeOff,
-  Pencil, Trash2,
+  Pencil, Trash2, Settings2, SlidersHorizontal,
 } from 'lucide-react'
 
 const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentacao', 'Material de Montagem', 'Manutencao Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
@@ -40,6 +40,7 @@ export function HomeTab() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [showModal, setShowModal] = useState(null)
   const [showLinks, setShowLinks] = useState(false)
+  const [showFinanceSettings, setShowFinanceSettings] = useState(false)
   const [privacyMode, setPrivacyMode] = useState(false)
 
   const allTransactions = settings.transactions || []
@@ -144,7 +145,16 @@ export function HomeTab() {
   return (
     <div className="max-w-7xl mx-auto space-y-4 pb-24">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-100">Visao Geral</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-100">Visao Geral</h2>
+          <button
+            onClick={() => setShowFinanceSettings(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+            title="Configuracoes Financeiras"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
             <ChevronLeft className="w-5 h-5 text-slate-300" />
@@ -458,6 +468,124 @@ export function HomeTab() {
           onSave={(newLinks) => updateSettings.mutate({ usefulLinks: newLinks })}
         />
       )}
+
+      {showFinanceSettings && (
+        <FinanceSettingsModal
+          settings={settings}
+          onClose={() => setShowFinanceSettings(false)}
+          onSave={(updates) => updateSettings.mutate(updates)}
+        />
+      )}
+    </div>
+  )
+}
+
+function FinanceSettingsModal({ settings, onClose, onSave }) {
+  const expenseCategories = settings.expenseCategories || DEFAULT_EXPENSE_CATEGORIES
+  const incomeCategories = settings.incomeCategories || DEFAULT_INCOME_CATEGORIES
+  const accounts = settings.accounts || DEFAULT_ACCOUNTS
+
+  const [expenseCats, setExpenseCats] = useState(expenseCategories)
+  const [incomeCats, setIncomeCats] = useState(incomeCategories)
+  const [accs, setAccs] = useState(accounts)
+  const [newExpense, setNewExpense] = useState('')
+  const [newIncome, setNewIncome] = useState('')
+  const [newAcc, setNewAcc] = useState('')
+  const [tab, setTab] = useState('accounts')
+
+  const save = () => {
+    onSave({ expenseCategories: expenseCats, incomeCategories: incomeCats, accounts: accs })
+    onClose()
+  }
+
+  const addExpense = () => {
+    if (newExpense.trim() && !expenseCats.includes(newExpense.trim())) {
+      setExpenseCats([...expenseCats, newExpense.trim()])
+      setNewExpense('')
+    }
+  }
+  const removeExpense = (cat) => setExpenseCats(expenseCats.filter((c) => c !== cat))
+  const addIncome = () => {
+    if (newIncome.trim() && !incomeCats.includes(newIncome.trim())) {
+      setIncomeCats([...incomeCats, newIncome.trim()])
+      setNewIncome('')
+    }
+  }
+  const removeIncome = (cat) => setIncomeCats(incomeCats.filter((c) => c !== cat))
+  const addAcc = () => {
+    if (newAcc.trim() && !accs.includes(newAcc.trim())) {
+      setAccs([...accs, newAcc.trim()])
+      setNewAcc('')
+    }
+  }
+  const removeAcc = (acc) => setAccs(accs.filter((a) => a !== acc))
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-panel shadow-stamped max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
+          <h3 className="font-bold text-slate-100">Config Financeiras</h3>
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-700 hover:bg-slate-600">
+            <X className="w-5 h-5 text-slate-300" />
+          </button>
+        </div>
+        <div className="flex border-b border-slate-700 flex-shrink-0">
+          <button onClick={() => setTab('accounts')} className={`flex-1 h-10 text-xs font-medium transition-colors ${tab === 'accounts' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}>Contas</button>
+          <button onClick={() => setTab('categories')} className={`flex-1 h-10 text-xs font-medium transition-colors ${tab === 'categories' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}>Categorias</button>
+        </div>
+        <div className="p-4 overflow-y-auto flex-1">
+          {tab === 'accounts' && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {accs.map((acc) => (
+                  <button key={acc} onClick={() => removeAcc(acc)} className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-industrial hover:bg-cyan-500/20">
+                    <DollarSign className="w-3 h-3" />{acc}<X className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input type="text" value={newAcc} onChange={(e) => setNewAcc(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addAcc()} placeholder="Nova conta" className="flex-1 h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+                <button onClick={addAcc} className="h-10 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400">+</button>
+              </div>
+            </div>
+          )}
+          {tab === 'categories' && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-bold text-slate-200 mb-2">Despesas</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {expenseCats.map((cat) => (
+                    <button key={cat} onClick={() => removeExpense(cat)} className="h-8 px-2 flex items-center gap-1 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-industrial hover:bg-red-500/20">
+                      {cat}<X className="w-2 h-2" />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input type="text" value={newExpense} onChange={(e) => setNewExpense(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addExpense()} placeholder="Nova categoria despesa" className="flex-1 h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+                  <button onClick={addExpense} className="h-10 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400">+</button>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-200 mb-2">Receitas</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {incomeCats.map((cat) => (
+                    <button key={cat} onClick={() => removeIncome(cat)} className="h-8 px-2 flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-industrial hover:bg-emerald-500/20">
+                      {cat}<X className="w-2 h-2" />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input type="text" value={newIncome} onChange={(e) => setNewIncome(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addIncome()} placeholder="Nova categoria receita" className="flex-1 h-10 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+                  <button onClick={addIncome} className="h-10 px-4 flex items-center justify-center text-sm font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400">+</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <button onClick={save} className="w-full h-12 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors m-4 mt-0 flex-shrink-0">
+          Salvar Alteracoes
+        </button>
+      </div>
     </div>
   )
 }
@@ -468,7 +596,7 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
   const [date, setDate] = useState(editingTx ? editingTx.date?.split('T')[0] : new Date().toISOString().split('T')[0])
   const [account, setAccount] = useState(editingTx?.account || accounts[0] || 'Carteira')
   const [category, setCategory] = useState(editingTx?.category || '')
-  const [repeatMonths, setRepeatMonths] = useState(1)
+  const [repeatMonths, setRepeatMonths] = useState(editingTx?.recurring ? 2 : 1)
 
   const isEditing = !!editingTx
   const modalType = typeof type === 'object' ? type.type : type
@@ -479,7 +607,7 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
     e.preventDefault()
     if (!description.trim() || !amount || !category) return
 
-    if (isEditing) {
+    if (isEditing && repeatMonths <= 1) {
       onSave({
         ...editingTx,
         type: modalType,
@@ -491,12 +619,16 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
         recurring: false,
         multiplier: 1,
       })
-    } else if (repeatMonths > 1) {
-      const baseDate = new Date(date)
+      onClose()
+      return
+    }
+
+    const baseDate = new Date(date)
+    if (repeatMonths > 1) {
       for (let i = 0; i < repeatMonths; i++) {
         const monthDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate())
         onSave({
-          id: Date.now() + i,
+          id: isEditing ? editingTx.id : Date.now() + i,
           type: modalType,
           description: description.trim(),
           amount: Number(amount),
@@ -541,7 +673,7 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={type === 'income' ? 'Ex: Instalação de esquadria' : 'Ex: Material de construção'}
+              placeholder={modalType === 'income' ? 'Ex: Instalação de esquadria' : 'Ex: Material de construção'}
               className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               required
             />
