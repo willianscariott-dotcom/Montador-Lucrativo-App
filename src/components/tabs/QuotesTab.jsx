@@ -39,7 +39,23 @@ export function QuotesTab({ onNewQuote }) {
         .eq('id', quoteId)
       if (error) throw error
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotes'] }),
+    onMutate: async ({ quoteId, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['quotes'] })
+      const previous = queryClient.getQueryData(['quotes'])
+      queryClient.setQueryData(['quotes'], (old) => {
+        if (!Array.isArray(old)) return old
+        return old.map((q) => q.id === quoteId ? { ...q, status } : q)
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['quotes'], context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] })
+    },
   })
 
   const deleteQuote = useMutation({

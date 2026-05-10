@@ -60,12 +60,13 @@ export function QuoteBuilder({ onBack }) {
     }
   }, [editingQuote, editingItems])
 
-  const userServices = profile?.settings?.meusServicos || []
-  const userParts = profile?.settings?.minhasPecas || []
-  const catalogServices = profile?.settings?.catalogServices || []
-  const catalogParts = profile?.settings?.catalogParts || []
-  const allServiceOptions = [...DEFAULT_SERVICES, ...userServices].sort()
-  const allPartOptions = [...DEFAULT_PARTS, ...userParts].sort()
+  const userServices = (profile?.settings?.meusServicos || []).filter(Boolean)
+  const userParts = (profile?.settings?.minhasPecas || []).filter(Boolean)
+  const catalogServices = (profile?.settings?.catalogServices || []).filter(Boolean)
+  const catalogParts = (profile?.settings?.catalogParts || []).filter(Boolean)
+  const allServiceOptions = [...DEFAULT_SERVICES, ...userServices].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  const allPartOptions = [...DEFAULT_PARTS, ...userParts].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  const pricing = profile?.settings?.pricing || {}
   const hourlyRate = (() => {
     const das = Number(pricing.dasValue) || 0
     const proLabore = Number(pricing.proLabore) || 0
@@ -90,31 +91,31 @@ export function QuoteBuilder({ onBack }) {
   const closeCatalogModal = () => setCatalogModal({ open: false, index: null })
 
   const selectCatalogItem = (item) => {
-    if (catalogModal.index !== null) {
-      updateItem(catalogModal.index, 'description', item.name)
-      updateItem(catalogModal.index, 'unit_price', item.basePrice)
-      if (catalogTab === 'services') {
-        updateItem(catalogModal.index, 'type', 'service')
-      } else {
-        updateItem(catalogModal.index, 'type', 'material')
-      }
-    }
+    if (catalogModal.index === null || !item) return
+    const targetIndex = catalogModal.index
+    updateItem(targetIndex, 'description', item.name || item.description || '')
+    updateItem(targetIndex, 'unit_price', item.basePrice || item.unit_price || '')
+    updateItem(targetIndex, 'type', catalogTab === 'services' ? 'service' : 'material')
     closeCatalogModal()
   }
 
-  const total = items.reduce((sum, item) => {
+  const safeItems = Array.isArray(items) ? items : []
+  const validItems = safeItems.filter((i) => i?.description?.trim() && i?.unit_price && Number(i?.unit_price) > 0)
+
+  const total = safeItems.reduce((sum, item) => {
+    if (!item) return sum
     const qty = Number(item.quantity) || 0
     const price = Number(item.unit_price) || 0
     return sum + qty * price
   }, 0)
 
-  const servicesTotal = items
-    .filter((i) => i.type === 'service')
-    .reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.unit_price) || 0), 0)
+  const servicesTotal = safeItems
+    .filter((i) => i?.type === 'service')
+    .reduce((s, i) => s + (Number(i?.quantity) || 0) * (Number(i?.unit_price) || 0), 0)
 
-  const materialsTotal = items
-    .filter((i) => i.type === 'material')
-    .reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.unit_price) || 0), 0)
+  const materialsTotal = safeItems
+    .filter((i) => i?.type === 'material')
+    .reduce((s, i) => s + (Number(i?.quantity) || 0) * (Number(i?.unit_price) || 0), 0)
 
   const formatCurrency = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`
 
@@ -122,10 +123,11 @@ export function QuoteBuilder({ onBack }) {
     mutationFn: async () => {
       if (!clientName.trim()) throw new Error('Nome do cliente é obrigatório')
 
-      const validItems = items.filter((i) => i.description?.trim() && i.unit_price && Number(i.unit_price) > 0)
+      const safeItems2 = Array.isArray(items) ? items : []
+      const validItems = safeItems2.filter((i) => i?.description?.trim() && i?.unit_price && Number(i?.unit_price) > 0)
       if (validItems.length === 0) throw new Error('Adicione pelo menos um item com descrição e valor')
 
-      const totalAmount = validItems.reduce((sum, item) => sum + (Number(item.quantity) || 1) * (Number(item.unit_price) || 0), 0)
+      const totalAmount = validItems.reduce((sum, item) => sum + (Number(item?.quantity) || 1) * (Number(item?.unit_price) || 0), 0)
 
       const { data: { session } } = await supabase.auth.getSession()
       const tenantId = session?.user?.id
@@ -145,11 +147,11 @@ export function QuoteBuilder({ onBack }) {
 
         await supabase.from('quote_items').delete().eq('quote_id', editingQuote.id)
 
-        const itemsToInsert = validItems.map((item) => ({
+        const itemsToInsert = validItems.filter(Boolean).map((item) => ({
           quote_id: editingQuote.id,
           tenant_id: tenantId,
-          type: item.type,
-          description: item.description.trim(),
+          type: item.type || 'service',
+          description: (item.description || '').trim(),
           details: item.details || null,
           quantity: Number(item.quantity) || 1,
           unit_price: Number(item.unit_price) || 0,
@@ -177,11 +179,11 @@ export function QuoteBuilder({ onBack }) {
 
       if (quoteError) throw quoteError
 
-      const itemsToInsert = validItems.map((item) => ({
+      const itemsToInsert = validItems.filter(Boolean).map((item) => ({
         quote_id: quote.id,
         tenant_id: tenantId,
-        type: item.type,
-        description: item.description.trim(),
+        type: item.type || 'service',
+        description: (item.description || '').trim(),
         details: item.details || null,
         quantity: Number(item.quantity) || 1,
         unit_price: Number(item.unit_price) || 0,
@@ -371,12 +373,12 @@ export function QuoteBuilder({ onBack }) {
                               <option value="">Selecione...</option>
                               {item.type === 'service' ? (
                                 <>
-                                  {allServiceOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                                  {(allServiceOptions || []).map((s) => <option key={s} value={s}>{s}</option>)}
                                   <option value="__custom__">+ Avulso...</option>
                                 </>
                               ) : (
                                 <>
-                                  {allPartOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+                                  {(allPartOptions || []).map((p) => <option key={p} value={p}>{p}</option>)}
                                   <option value="__custom__">+ Avulso...</option>
                                 </>
                               )}
@@ -690,23 +692,26 @@ export function QuoteBuilder({ onBack }) {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
-              {catalogTab === 'services' && catalogServices.length === 0 && (
-                <p className="text-center text-slate-400 py-8">Nenhum serviço no catálogo</p>
+<div className="flex-1 overflow-y-auto p-4">
+              {catalogTab === 'services' && catalogServices?.length === 0 && (
+                <p className="text-center text-slate-400 py-8">Nenhum servico no catalogo</p>
               )}
-              {catalogTab === 'parts' && catalogParts.length === 0 && (
-                <p className="text-center text-slate-400 py-8">Nenhuma peça no catálogo</p>
+              {catalogTab === 'parts' && catalogParts?.length === 0 && (
+                <p className="text-center text-slate-400 py-8">Nenhuma peca no catalogo</p>
               )}
-              {(catalogTab === 'services' ? catalogServices : catalogParts).map((item, index) => (
+              {(catalogTab === 'services' ? catalogServices : catalogParts)?.map((item, index) => {
+                if (!item) return null
+                return (
                 <button
                   key={item.id || index}
                   onClick={() => selectCatalogItem(item)}
                   className="w-full flex items-center justify-between p-3 mb-2 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
                 >
-                  <span className="text-sm text-slate-100">{item.name}</span>
-                  <span className="text-sm font-bold text-amber-500">{formatCurrency(Number(item.basePrice))}</span>
+                  <span className="text-sm text-slate-100">{item.name || 'Item sem nome'}</span>
+                  <span className="text-sm font-bold text-amber-500">{formatCurrency(Number(item.basePrice || 0))}</span>
                 </button>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

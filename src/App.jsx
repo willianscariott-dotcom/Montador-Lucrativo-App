@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/auth'
 import { LoginPage } from './components/Auth'
 import { SignupPage } from './components/Auth'
 import Dashboard from './components/Dashboard'
+import { AdminDashboard } from './components/AdminDashboard'
 
 export default function App() {
   const { session, setSession } = useAuthStore()
   const [loading, setLoading] = useState(true)
-  const [authView, setAuthView] = useState('login')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -31,10 +32,26 @@ export default function App() {
     )
   }
 
-  if (session) {
-    return <Dashboard />
-  }
+  return (
+    <Routes>
+      <Route
+        path="/admin"
+        element={
+          session ? <AdminDashboard /> : <Navigate to="/" replace />
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          session ? <Dashboard /> : <AuthRouter />
+        }
+      />
+    </Routes>
+  )
+}
 
+function AuthRouter() {
+  const [authView, setAuthView] = useState('login')
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
