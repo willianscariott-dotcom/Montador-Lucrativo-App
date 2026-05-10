@@ -370,4 +370,78 @@ export function generateWarrantyPDF(data) {
   return fileName
 }
 
+export function generateAnnualReportPDF(data) {
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+
+  const { year, profileName, monthlyData, totals } = data
+
+  addHeader(doc, `RELATORIO ANUAL ${year}`, profileName || 'Montador Lucrativo')
+
+  doc.setFillColor(...slate300)
+  doc.rect(14, 50, 182, 2, 'F')
+  doc.setFontSize(10)
+  doc.setTextColor(100, 100, 100)
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 196, 56, { align: 'right' })
+
+  const totalsY = 65
+  doc.setFillColor(5, 150, 105)
+  doc.rect(14, totalsY, 56, 18, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(255, 255, 255)
+  doc.text('Total Receitas', 42, totalsY + 7, { align: 'center' })
+  doc.setFontSize(11)
+  doc.text(`R$ ${totals.totalIncome.toFixed(2).replace('.', ',')}`, 42, totalsY + 14, { align: 'center' })
+
+  doc.setFillColor(239, 68, 68)
+  doc.rect(77, totalsY, 56, 18, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(255, 255, 255)
+  doc.text('Total Despesas', 105, totalsY + 7, { align: 'center' })
+  doc.setFontSize(11)
+  doc.text(`R$ ${totals.totalExpense.toFixed(2).replace('.', ',')}`, 105, totalsY + 14, { align: 'center' })
+
+  const balanceColor = totals.balance >= 0 ? emeraldColor : [239, 68, 68]
+  doc.setFillColor(...balanceColor)
+  doc.rect(140, totalsY, 56, 18, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(255, 255, 255)
+  doc.text(totals.balance >= 0 ? 'Lucro Anual' : 'Prejuizo', 168, totalsY + 7, { align: 'center' })
+  doc.setFontSize(11)
+  doc.text(`R$ ${Math.abs(totals.balance).toFixed(2).replace('.', ',')}`, 168, totalsY + 14, { align: 'center' })
+
+  const tableBody = monthlyData.map((m) => [
+    m.label,
+    `R$ ${m.income.toFixed(2).replace('.', ',')}`,
+    `R$ ${m.expense.toFixed(2).replace('.', ',')}`,
+    `R$ ${m.balance.toFixed(2).replace('.', ',')}`,
+  ])
+
+  autoTable(doc, {
+    startY: 92,
+    head: [['Mes', 'Receitas', 'Despesas', 'Saldo']],
+    body: tableBody,
+    margin: { left: 14, right: 14, top: 10, bottom: 10 },
+    styles: { fontSize: 9, cellPadding: { top: 3, right: 4, bottom: 3, left: 4 } },
+    headStyles: { fillColor: primaryColor, textColor: accentColor, fontStyle: 'bold', fontSize: 9 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { cellWidth: 50 },
+      1: { cellWidth: 44, halign: 'right' },
+      2: { cellWidth: 44, halign: 'right' },
+      3: { cellWidth: 44, halign: 'right' },
+    },
+    tableWidth: '100%',
+    rowPageBreak: 'avoid',
+  })
+
+  addFooter(doc)
+
+  const fileName = `Relatorio_Anual_${year}.pdf`
+  doc.save(fileName)
+  return fileName
+}
+
 export { DEFAULT_WARRANTY }

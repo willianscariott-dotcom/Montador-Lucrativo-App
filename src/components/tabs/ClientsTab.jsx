@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
-import { Users, UserPlus, X, Cake, Pencil, Trash2 } from 'lucide-react'
+import { Users, UserPlus, X, Cake, Pencil, Trash2, MessageSquare } from 'lucide-react'
 
 export function ClientsTab() {
   const { data: profile } = useProfile()
@@ -73,6 +73,16 @@ export function ClientsTab() {
                 <span className="text-xs text-amber-500 flex-shrink-0">{new Date(client.birthdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
               )}
               <div className="flex items-center gap-2 flex-shrink-0">
+                {client.phone && (
+                  <a
+                    href={`https://wa.me/55${client.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 flex items-center justify-center rounded-industrial bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4 text-emerald-500" />
+                  </a>
+                )}
                 <button
                   onClick={() => handleEdit(client)}
                   className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"

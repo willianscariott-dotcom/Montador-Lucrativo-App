@@ -59,6 +59,7 @@ export function PricingSettings({ onClose }) {
 
   const monthlyGross = (Number(form.dasValue) || 0) + (Number(form.proLabore) || 0) + (Number(form.fixedCosts) || 0)
   const monthlyNet = monthlyGross * (1 + (Number(form.profitMargin) || 0) / 100)
+  const profitValue = monthlyNet - monthlyGross
   const totalHours = (Number(form.workDays) || 22) * (Number(form.workHours) || 8)
 
   return (
@@ -73,7 +74,7 @@ export function PricingSettings({ onClose }) {
           </button>
         )}
         <div>
-          <h2 className="text-xl font-bold text-slate-100">Precificação</h2>
+          <h2 className="text-xl font-bold text-slate-100">Precificacao</h2>
           <p className="text-sm text-slate-400">Configure seus custos para calcular o valor/hora</p>
         </div>
       </div>
@@ -86,7 +87,7 @@ export function PricingSettings({ onClose }) {
                 <Building2 className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-100">Regime Tributário</h3>
+                <h3 className="font-bold text-slate-100">Regime Tributario</h3>
                 <p className="text-sm text-slate-400">Selecione seu regime fiscal</p>
               </div>
             </div>
@@ -127,7 +128,7 @@ export function PricingSettings({ onClose }) {
               </div>
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-slate-300">
-                  Pró-labore (R$)
+                  Pro-labore (R$)
                 </label>
                 <input
                   type="number"
@@ -177,7 +178,7 @@ export function PricingSettings({ onClose }) {
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-slate-300">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  Dias Trabalhados/Mês
+                  Dias Trabalhados/Mes
                 </label>
                 <input
                   type="number"
@@ -233,15 +234,23 @@ export function PricingSettings({ onClose }) {
                 <span className="text-slate-200">{formatCurrency(monthlyGross)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Com lucro ({form.profitMargin || 0}%):</span>
+                <span className="text-slate-400">Margem de lucro:</span>
+                <span className="text-amber-500 font-bold">{form.profitMargin || 0}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Valor de lucro/mês:</span>
+                <span className="text-emerald-400 font-bold">{formatCurrency(profitValue)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total c/ lucro:</span>
                 <span className="text-amber-500">{formatCurrency(monthlyNet)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Horas/mês:</span>
+                <span className="text-slate-400">Horas/mes:</span>
                 <span className="text-slate-200">{totalHours}h</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Custo/hora:</span>
+                <span className="text-slate-400">Custo/hora (sem lucro):</span>
                 <span className="text-slate-200">{totalHours > 0 ? formatCurrency(monthlyGross / totalHours) : '-'}</span>
               </div>
             </div>
@@ -251,7 +260,7 @@ export function PricingSettings({ onClose }) {
               disabled={saving}
               className="w-full mt-4 h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 active:bg-amber-600 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] transition-all disabled:opacity-50"
             >
-              {saving ? 'Salvando...' : 'Salvar Precificação'}
+              {saving ? 'Salvando...' : 'Salvar Precificacao'}
             </button>
           </div>
         </div>

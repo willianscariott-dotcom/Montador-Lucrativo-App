@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { useUnsaved } from '../Dashboard'
 import { generateQuotePDF } from '../../lib/pdfGenerator'
-import { Plus, Trash2, Save, Download, ArrowLeft, Wrench, Package, X, Bookmark } from 'lucide-react'
+import { Plus, Trash2, Save, Download, ArrowLeft, Wrench, Package, X, Bookmark, Calendar } from 'lucide-react'
 
 const emptyItem = {
   type: 'service',
@@ -377,6 +377,18 @@ export function QuoteBuilder({ onBack }) {
               className="h-14 px-6 flex items-center justify-center gap-2 text-base font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-all disabled:opacity-50"
             >
               <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                if (!clientName.trim()) { alert('Adicione o nome do cliente primeiro'); return }
+                const details = items.filter((i) => i.description?.trim()).map((i) => `${i.description} (R$ ${Number(i.unit_price || 0).toFixed(2).replace('.', ',')})`).join('\n')
+                const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Orcamento+${encodeURIComponent(clientName)}&details=${encodeURIComponent(details)}&dates=${new Date(Date.now() + 7 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}/${new Date(Date.now() + 8 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}`
+                window.open(url, '_blank')
+              }}
+              className="h-14 px-6 flex items-center justify-center gap-2 text-base font-bold text-slate-100 bg-blue-600 border border-blue-500 rounded-industrial hover:bg-blue-500 transition-all"
+              title="Agendar no Google Calendar"
+            >
+              <Calendar className="w-5 h-5" />
             </button>
           </div>
         </div>

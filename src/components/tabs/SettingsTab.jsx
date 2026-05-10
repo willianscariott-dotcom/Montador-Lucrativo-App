@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
+import { useProfile, useUpdateSettings, useUpdateProfile } from '../../hooks/useProfile'
 import { CatalogManager } from '../form/CatalogManager'
 import { PricingSettings } from '../form/PricingSettings'
 import { ReferralDashboard } from '../form/ReferralDashboard'
 import { UpgradePlan } from '../form/UpgradePlan'
-import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift, Tag, Wallet, Bell, Link2, X, Plus, FileText } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Bookmark, Crown, Zap, ChevronRight, Clock, TrendingUp, Calculator, Gift, Tag, Wallet, Bell, Link2, X, Plus, FileText, User } from 'lucide-react'
 
 const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentação', 'Material de Montagem', 'Manutenção Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
 const DEFAULT_INCOME_CATEGORIES = ['Serviço Montagem', 'Serviço Instalação', 'Serviço Avulso', 'Receita Extra']
@@ -41,6 +41,10 @@ export function SettingsTab() {
 
   if (showView === 'upgrade') {
     return <UpgradePlan onBack={() => setShowView(null)} />
+  }
+
+  if (showView === 'profile') {
+    return <ProfileManager onClose={() => setShowView(null)} />
   }
 
   if (showCategories) {
@@ -276,6 +280,20 @@ export function SettingsTab() {
         <div className="flex-1 text-left">
           <p className="font-medium text-slate-100">Texto de Garantia PDF</p>
           <p className="text-sm text-slate-400">Personalize o Termo de Garantia</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-slate-500" />
+      </button>
+
+      <button
+        onClick={() => setShowView('profile')}
+        className="w-full flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
+      >
+        <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-amber-500/10">
+          <User className="w-6 h-6 text-amber-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="font-medium text-slate-100">Dados Pessoais</p>
+          <p className="text-sm text-slate-400">Nome, telefone e foto de perfil</p>
         </div>
         <ChevronRight className="w-5 h-5 text-slate-500" />
       </button>
@@ -677,6 +695,149 @@ function WarrantyManager({ onClose }) {
           Salvar Alteracoes
         </button>
       </div>
+    </div>
+  )
+}
+
+function ProfileManager({ onClose }) {
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
+  const [fullName, setFullName] = useState(profile?.full_name || '')
+  const [phone, setPhone] = useState(profile?.phone || '')
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
+  const [address, setAddress] = useState(profile?.address || '')
+  const [cnpj, setCnpj] = useState(profile?.cnpj || '')
+  const [instagram, setInstagram] = useState(profile?.instagram || '')
+  const [pixKey, setPixKey] = useState(profile?.pix_key || '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await updateProfile.mutateAsync({
+        full_name: fullName.trim(),
+        phone: phone.replace(/\D/g, ''),
+        avatar_url: avatarUrl,
+        address: address.trim(),
+        cnpj: cnpj.replace(/\D/g, ''),
+        instagram: instagram.replace('@', '').trim(),
+        pix_key: pixKey.trim(),
+      })
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => setAvatarUrl(ev.target?.result || '')
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-100">Dados Pessoais</h2>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">
+          <X className="w-5 h-5 text-slate-300" />
+        </button>
+      </div>
+
+      <div className="flex flex-col items-center mb-2">
+        <label className="relative cursor-pointer group">
+          <div className="w-24 h-24 rounded-full bg-slate-700 border-2 border-amber-500 flex items-center justify-center overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-10 h-10 text-slate-400" />
+            )}
+          </div>
+          <div className="absolute inset-0 bg-slate-950/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+            <span className="text-xs text-white font-medium">Alterar</span>
+          </div>
+          <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+        </label>
+        <p className="text-xs text-slate-500 mt-2">Foto de perfil</p>
+      </div>
+
+      <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4 space-y-4">
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">Nome Completo</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="Seu nome"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">Telefone (WhatsApp)</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3'))}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="(00) 00000-0000"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">Endereco</label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="Rua, numero, bairro, cidade"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">CNPJ</label>
+          <input
+            type="text"
+            value={cnpj}
+            onChange={(e) => setCnpj(e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'))}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="00.000.000/0000-00"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">Instagram</label>
+          <input
+            type="text"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value.replace('@', ''))}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="seu_usuario"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1.5 text-sm font-medium text-slate-300">Chave Pix</label>
+          <input
+            type="text"
+            value={pixKey}
+            onChange={(e) => setPixKey(e.target.value)}
+            className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500"
+            placeholder="Email, CPF, telefone ou chave aleatoria"
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors disabled:opacity-50"
+      >
+        {saving ? 'Salvando...' : 'Salvar Dados'}
+      </button>
     </div>
   )
 }

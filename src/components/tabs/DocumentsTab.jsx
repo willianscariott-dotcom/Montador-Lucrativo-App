@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useProfile } from '../../hooks/useProfile'
-import { generateReceiptPDF, generateWarrantyPDF } from '../../lib/pdfGenerator'
-import { FileText, Receipt, Shield, X } from 'lucide-react'
+import { generateReceiptPDF, generateWarrantyPDF, generateAnnualReportPDF } from '../../lib/pdfGenerator'
+import { FileText, Receipt, Shield, X, BarChart3 } from 'lucide-react'
 
 export function DocumentsTab() {
   const { data: profile } = useProfile()
   const [showModal, setShowModal] = useState(null)
 
-  const cards = [
+const cards = [
     {
       id: 'receipt',
       icon: Receipt,
@@ -20,9 +20,17 @@ export function DocumentsTab() {
       id: 'warranty',
       icon: Shield,
       title: 'Termo de Garantia',
-      description: 'Termo de garantia de 90 dias para serviços',
+      description: 'Termo de garantia de 90 dias para servicos',
       color: 'bg-amber-500/10',
       iconColor: 'text-amber-500',
+    },
+    {
+      id: 'annualReport',
+      icon: BarChart3,
+      title: 'Relatorio Anual',
+      description: 'Resumo financeiro do ano comtotais mensais',
+      color: 'bg-blue-500/10',
+      iconColor: 'text-blue-400',
     },
   ]
 
@@ -58,6 +66,13 @@ export function DocumentsTab() {
 
       {showModal === 'warranty' && (
         <WarrantyModal
+          profile={profile}
+          onClose={() => setShowModal(null)}
+        />
+      )}
+
+      {showModal === 'annualReport' && (
+        <AnnualReportModal
           profile={profile}
           onClose={() => setShowModal(null)}
         />
@@ -243,6 +258,84 @@ function WarrantyModal({ profile, onClose }) {
           </div>
           <button type="submit" className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
             <Shield className="w-5 h-5" />
+            Gerar PDF
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function AnnualReportModal({ profile, onClose }) {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [customTransactions, setCustomTransactions] = useState(null)
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const year = selectedYear
+    const months = []
+    for (let m = 0; m < 12; m++) {
+      const label = new Date(year, m, 1).toLocaleDateString('pt-BR', { month: 'short' })
+      const monthStart = new Date(year, m, 1)
+      const monthEnd = new Date(year, m + 1, 0)
+      const all = customTransactions || (profile?.settings?.transactions || [])
+      const monthTransactions = all.filter((t) => {
+        const d = new Date(t.date)
+        return d >= monthStart && d <= monthEnd
+      })
+      const income = monthTransactions.filter((t) => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+      const expense = monthTransactions.filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+      months.push({ label, income, expense, balance: income - expense })
+    }
+    const totals = {
+      totalIncome: months.reduce((s, m) => s + m.income, 0),
+      totalExpense: months.reduce((s, m) => s + m.expense, 0),
+      balance: months.reduce((s, m) => s + m.balance, 0),
+    }
+    generateAnnualReportPDF({
+      year,
+      profileName: profile?.full_name || 'Montador Pro',
+      monthlyData: months,
+      totals,
+    })
+    onClose()
+  }
+
+  const currentYear = new Date().getFullYear()
+  const years = [currentYear, currentYear - 1, currentYear - 2]
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <h3 className="font-bold text-slate-100">Gerar Relatorio Anual</h3>
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-700 hover:bg-slate-600">
+            <X className="w-5 h-5 text-slate-300" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Ano</label>
+            <div className="grid grid-cols-3 gap-2">
+              {years.map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setSelectedYear(y)}
+                  className={`h-12 rounded-industrial text-sm font-medium transition-colors ${
+                    selectedYear === y
+                      ? 'bg-amber-500 text-slate-950 shadow-stamped'
+                      : 'bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600'
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-xs text-slate-500">O relatorio agrupa receitas e despesas por mes, com totais anuais.</p>
+          <button type="submit" className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
+            <BarChart3 className="w-5 h-5" />
             Gerar PDF
           </button>
         </form>

@@ -31,3 +31,32 @@
 - **Funções Exigidas no Painel:** O admin deve poder visualizar todos os usuários (`profiles`), ver as tabelas `wallets` (para processar saques de indicação) e ter um botão para editar o `status` do usuário (para aprovar premium manualmente).
 - O layout do painel admin também deve ser focado no Mobile (para o dono operar do celular).
 
+## Progress
+### Done
+- Configuração inicial do projeto (Vite + React + Tailwind v4 + Supabase)
+- Sistema de Auth com Login/Signup via Zustand
+- Dashboard com BottomNav e tabs (Home, Quotes, Clients, Documents, Settings)
+- QuoteBuilder com RLS fixado (tenant_id via supabase.auth.getSession), mutation com invalidar queries, PDF download
+- PDF Engine completo com A4, logo customizável, tables, status em português, Instagram footer, premium mode
+- PricingSettings com cálculo Valor/Hora, detalhamento de lucro (margem %, valor lucro/mês, total c/ lucro)
+- HomeTab: Saldo Mensal isolado, Saldo Geral Acumulado, Receitas/Despesas mensais, navegação mensal, barra meta com gamificação, limite anual, modo privacidade (Eye), pb-24
+- SettingsTab: CatalogManager, PricingSettings, ReferralDashboard, UpgradePlan, CategoriesManager, AccountsManager, LimitsManager, ReminderManager, WarrantyManager, ProfileManager
+- ClientsTab: modal completo, editar/excluir, WhatsApp button direto (wa.me/55), máscara CPF/CNPJ dinâmica, campo Data de Nascimento, alerta aniversário
+- QuotesTab: useQuery com quotes do Supabase, PDF/WhatsApp conectados, CRUD completo, status ('draft'/'approved'/'paid'/'rejected'), automação de caixa em Marcar Pago, Google Calendar (draft + approved)
+- WarrantyManager: 3 textareas (intro, cobre, não cobre), salvar em settings.warranty
+- HomeTab: filtros estritos getMonth/getFullYear, recorrentes filtrados por monthStart/monthEnd, pb-24, privacyMode com blur-sm
+- Relatório Anual PDF em DocumentsTab (com geração por ano, totais mensais, receitas/despesas/balance)
+- Perfil completo via ProfileManager (nome, telefone, avatar upload base64, endereço, CNPJ, Instagram, chave Pix)
+- Google Calendar botão no QuoteBuilder e no QuotesTab (draft + approved)
+- useUpdateProfile hook em useProfile.js
+
+### In Progress
+- Admin Dashboard em /admin
+
+### Blocked
+- (none)
+
+### Next Steps
+- Admin Dashboard (/admin): ver profiles, wallets, editar status do usuário
+- Testar e validar tudo
+

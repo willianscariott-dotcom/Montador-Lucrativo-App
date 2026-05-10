@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Plus, FileDown, Clock, ArrowUpRight, Pencil, Trash2, CheckCircle, MessageSquare } from 'lucide-react'
+import { FileText, Plus, FileDown, Clock, ArrowUpRight, Pencil, Trash2, CheckCircle, MessageSquare, Calendar } from 'lucide-react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/auth'
@@ -187,6 +187,16 @@ export function QuotesTab({ onNewQuote }) {
                       WhatsApp
                     </button>
                     <button
+                      onClick={() => {
+                        const details = `Orcamento ${quote.id?.slice(0, 8).toUpperCase()}\nCliente: ${quote.client_name}\nValor: R$ ${Number(quote.total_amount).toFixed(2).replace('.', ',')}`
+                        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Orcamento+${encodeURIComponent(quote.client_name)}&details=${encodeURIComponent(details)}&dates=${new Date(Date.now() + 7 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}/${new Date(Date.now() + 8 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}`
+                        window.open(url, '_blank')
+                      }}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-blue-600 border border-blue-500 rounded-industrial hover:bg-blue-500 transition-colors"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handlePDF(quote)}
                       className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
                     >
@@ -216,6 +226,16 @@ export function QuotesTab({ onNewQuote }) {
                     >
                       <MessageSquare className="w-4 h-4" />
                       WhatsApp
+                    </button>
+                    <button
+                      onClick={() => {
+                        const details = `Orcamento ${quote.id?.slice(0, 8).toUpperCase()}\nCliente: ${quote.client_name}\nValor: R$ ${Number(quote.total_amount).toFixed(2).replace('.', ',')}`
+                        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Orcamento+${encodeURIComponent(quote.client_name)}&details=${encodeURIComponent(details)}&dates=${new Date(Date.now() + 7 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}/${new Date(Date.now() + 8 * 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15)}`
+                        window.open(url, '_blank')
+                      }}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-blue-600 border border-blue-500 rounded-industrial hover:bg-blue-500 transition-colors"
+                    >
+                      <Calendar className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handlePDF(quote)}

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import {
   TrendingUp, TrendingDown, Target, DollarSign, ArrowUpRight,
-  ArrowDownRight, X, ChevronLeft, ChevronRight, Link2, Bell, Repeat,
+  ArrowDownRight, X, ChevronLeft, ChevronRight, Link2, Bell, Repeat, Eye, EyeOff,
 } from 'lucide-react'
 
-const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentação', 'Material de Montagem', 'Manutenção Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
-const DEFAULT_INCOME_CATEGORIES = ['Serviço Montagem', 'Serviço Instalação', 'Serviço Avulso', 'Receita Extra']
+const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentacao', 'Material de Montagem', 'Manutencao Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
+const DEFAULT_INCOME_CATEGORIES = ['Servico Montagem', 'Servico Instalacao', 'Servico Avulso', 'Receita Extra']
 const DEFAULT_ACCOUNTS = ['Carteira', 'Conta Banco', 'Pix']
 
 const USEFUL_LINKS = [
@@ -39,6 +39,7 @@ export function HomeTab() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [showModal, setShowModal] = useState(null)
   const [showLinks, setShowLinks] = useState(false)
+  const [privacyMode, setPrivacyMode] = useState(false)
 
   const allTransactions = settings.transactions || []
 
@@ -122,6 +123,8 @@ export function HomeTab() {
 
   const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`
 
+  const privacyClass = privacyMode ? 'blur-sm select-none' : ''
+
   const monthName = new Date(selectedYear, selectedMonth, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   const prevMonth = () => {
@@ -135,7 +138,7 @@ export function HomeTab() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4 pb-24">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-100">Visao Geral</h2>
         <div className="flex items-center gap-2">
@@ -148,6 +151,13 @@ export function HomeTab() {
           <button onClick={nextMonth} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
             <ChevronRight className="w-5 h-5 text-slate-300" />
           </button>
+          <button
+            onClick={() => setPrivacyMode(!privacyMode)}
+            className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+            title={privacyMode ? 'Mostrar valores' : 'Ocultar valores'}
+          >
+            {privacyMode ? <EyeOff className="w-5 h-5 text-amber-500" /> : <Eye className="w-5 h-5 text-slate-400" />}
+          </button>
         </div>
       </div>
 
@@ -156,10 +166,10 @@ export function HomeTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-400">Saldo do Mes</p>
-              <p className={`text-2xl font-bold ${monthBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {formatCurrency(monthBalance)}
+              <p className={`text-2xl font-bold ${monthBalance >= 0 ? 'text-emerald-500' : 'text-red-500'} ${privacyClass}`}>
+                {privacyMode ? 'R$ ***' : formatCurrency(monthBalance)}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Balancalo mensal - sem recorrentes</p>
+              <p className="text-xs text-slate-500 mt-1">Balanco mensal - sem recorrentes</p>
             </div>
             <div className={`w-12 h-12 flex items-center justify-center rounded-industrial ${monthBalance >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
               {monthBalance >= 0 ? (
@@ -189,17 +199,21 @@ export function HomeTab() {
 
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
           <p className="text-sm text-slate-400">Receitas do Mes</p>
-          <p className="text-xl font-bold text-slate-100">{formatCurrency(totalMonthIncome)}</p>
+          <p className={`text-xl font-bold text-slate-100 ${privacyClass}`}>
+            {privacyMode ? 'R$ ***' : formatCurrency(totalMonthIncome)}
+          </p>
           {recurringIncome > 0 && (
-            <p className="text-xs text-emerald-500 mt-1">+ {formatCurrency(recurringIncome)} recorrentes</p>
+            <p className="text-xs text-emerald-500 mt-1">+ {privacyMode ? '***' : formatCurrency(recurringIncome)} recorrentes</p>
           )}
         </div>
 
         <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4">
           <p className="text-sm text-slate-400">Despesas do Mes</p>
-          <p className="text-xl font-bold text-slate-100">{formatCurrency(totalMonthExpense)}</p>
+          <p className={`text-xl font-bold text-slate-100 ${privacyClass}`}>
+            {privacyMode ? 'R$ ***' : formatCurrency(totalMonthExpense)}
+          </p>
           {recurringExpense > 0 && (
-            <p className="text-xs text-red-500 mt-1">+ {formatCurrency(recurringExpense)} recorrentes</p>
+            <p className="text-xs text-red-500 mt-1">+ {privacyMode ? '***' : formatCurrency(recurringExpense)} recorrentes</p>
           )}
         </div>
       </div>
@@ -215,8 +229,8 @@ export function HomeTab() {
               <p className="text-sm text-slate-400">Todas receitas - despesas de todos os meses</p>
             </div>
           </div>
-          <p className={`text-xl font-bold ${generalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-            {formatCurrency(generalBalance)}
+          <p className={`text-xl font-bold ${generalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'} ${privacyClass}`}>
+            {privacyMode ? 'R$ ***' : formatCurrency(generalBalance)}
           </p>
         </div>
       </div>
@@ -232,7 +246,9 @@ export function HomeTab() {
               <p className="text-sm text-slate-400">Baseado na sua precificacao</p>
             </div>
           </div>
-          <p className="text-sm font-bold text-amber-500">{formatCurrency(monthlyTarget)}</p>
+          <p className={`text-sm font-bold text-amber-500 ${privacyClass}`}>
+            {privacyMode ? '***' : formatCurrency(monthlyTarget)}
+          </p>
         </div>
         <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
           <div
@@ -240,8 +256,8 @@ export function HomeTab() {
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <p className="text-sm text-slate-400 mt-2 text-right">
-          {progressPercent.toFixed(1)}% atingido ({formatCurrency(totalMonthIncome)})
+        <p className={`text-sm text-slate-400 mt-2 text-right ${privacyClass}`}>
+          {privacyMode ? '***' : `${progressPercent.toFixed(1)}% atingido (${formatCurrency(totalMonthIncome)})`}
         </p>
         {metaBatida ? (
           <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-industrial">
@@ -263,7 +279,9 @@ export function HomeTab() {
               </div>
               <div>
                 <p className="font-bold text-slate-100">Limite Anual {regime}</p>
-                <p className="text-sm text-slate-400">{formatCurrency(currentYearTransactions)} de {formatCurrency(limit)}</p>
+                <p className={`text-sm text-slate-400 ${privacyClass}`}>
+                  {privacyMode ? '*** de ***' : `${formatCurrency(currentYearTransactions)} de ${formatCurrency(limit)}`}
+                </p>
               </div>
             </div>
             <p className="text-sm font-bold text-red-500">{annualProgress.toFixed(1)}%</p>

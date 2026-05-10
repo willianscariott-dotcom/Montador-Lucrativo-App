@@ -110,3 +110,34 @@ export function useQuoteStats() {
     staleTime: 1000 * 60 * 5,
   })
 }
+
+export function useUpdateProfile() {
+  const user = useAuthStore((s) => s.user)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (updates) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user?.id)
+
+      if (error) throw error
+      return updates
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: ['profile', user?.id] })
+      const previous = queryClient.getQueryData(['profile', user?.id])
+      queryClient.setQueryData(['profile', user?.id], (old) => ({ ...old, ...updates }))
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['profile', user?.id], context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
+    },
+  })
+}
