@@ -1,11 +1,17 @@
-import { FileText, Plus, FileDown, Clock, ArrowUpRight } from 'lucide-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { FileText, Plus, FileDown, Clock, ArrowUpRight, Pencil, Trash2, CheckCircle, MessageSquare } from 'lucide-react'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/auth'
+import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
+import { generateQuotePDF } from '../../lib/pdfGenerator'
+import { openWhatsApp } from '../../lib/whatsapp'
 
 export function QuotesTab({ onNewQuote }) {
   const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile()
   const queryClient = useQueryClient()
+  const updateSettings = useUpdateSettings()
 
   const { data: quotes = [], isLoading } = useQuery({
     queryKey: ['quotes'],
@@ -23,14 +29,95 @@ export function QuotesTab({ onNewQuote }) {
     enabled: !!user?.id,
   })
 
+  const updateQuoteStatus = useMutation({
+    mutationFn: async ({ quoteId, status }) => {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ status })
+        .eq('id', quoteId)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotes'] }),
+  })
+
+  const deleteQuote = useMutation({
+    mutationFn: async (quoteId) => {
+      await supabase.from('quote_items').delete().eq('quote_id', quoteId)
+      const { error } = await supabase.from('quotes').delete().eq('id', quoteId)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotes'] }),
+  })
+
+  const handleMarkPaid = (quote) => {
+    if (!window.confirm(`Confirmar pagamento do orçamento de ${quote.client_name} no valor de R$ ${Number(quote.total_amount).toFixed(2).replace('.', ',')}?`)) return
+
+    updateQuoteStatus.mutate({ quoteId: quote.id, status: 'paid' })
+
+    const settings = profile?.settings || {}
+    const transactions = settings.transactions || []
+    const newTx = {
+      id: Date.now(),
+      type: 'income',
+      description: `Orçamento - ${quote.client_name}`,
+      amount: Number(quote.total_amount),
+      date: new Date().toISOString(),
+      account: 'Carteira',
+      category: 'Serviço Montagem',
+      recurring: false,
+      multiplier: 1,
+      quote_id: quote.id,
+    }
+    updateSettings.mutate({ transactions: [...transactions, newTx] })
+  }
+
+  const handleMarkApproved = (quote) => {
+    if (!window.confirm(`Marcar orçamento de ${quote.client_name} como aprovado?`)) return
+    updateQuoteStatus.mutate({ quoteId: quote.id, status: 'approved' })
+  }
+
+  const handleDelete = (quote) => {
+    if (!window.confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return
+    deleteQuote.mutate(quote.id)
+  }
+
+  const handlePDF = async (quote) => {
+    try {
+      const { data: items } = await supabase
+        .from('quote_items')
+        .select('*')
+        .eq('quote_id', quote.id)
+      generateQuotePDF(quote, items || [], profile)
+    } catch (err) {
+      alert('Erro ao gerar PDF: ' + err.message)
+    }
+  }
+
+  const handleWhatsApp = (quote) => {
+    const phone = quote.client_phone || ''
+    const msg = `Olá ${quote.client_name}! 👋\n\nSegue o orçamento Nº ${quote.id?.slice(0, 8).toUpperCase() || '--------'} no valor de *R$ ${Number(quote.total_amount).toFixed(2).replace('.', ',')}*.\n\nQualquer dúvida, estou à disposição!\n\nAtenciosamente,\nMontador Lucrativo`
+    openWhatsApp(phone, msg)
+  }
+
   const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`
 
   const statusColor = (status) => {
     switch (status) {
+      case 'paid': return 'text-emerald-400 bg-emerald-500/20'
       case 'approved': return 'text-emerald-500 bg-emerald-500/10'
       case 'rejected': return 'text-red-500 bg-red-500/10'
       case 'draft': return 'text-slate-400 bg-slate-700'
       default: return 'text-amber-500 bg-amber-500/10'
+    }
+  }
+
+  const statusLabel = (status) => {
+    switch (status) {
+      case 'paid': return 'Pago'
+      case 'approved': return 'Aprovado'
+      case 'rejected': return 'Recusado'
+      case 'draft': return 'Rascunho'
+      default: return status
     }
   }
 
@@ -65,13 +152,13 @@ export function QuotesTab({ onNewQuote }) {
             <div key={quote.id} className="p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <p className="font-medium text-slate-100">{quote.client_name}</p>
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${statusColor(quote.status)}`}>
-                      {quote.status === 'draft' ? 'Rascunho' : quote.status === 'approved' ? 'Aprovado' : quote.status === 'rejected' ? 'Recusado' : quote.status}
+                      {statusLabel(quote.status)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {new Date(quote.created_at).toLocaleDateString('pt-BR')}
@@ -88,28 +175,99 @@ export function QuotesTab({ onNewQuote }) {
                   </span>
                 </div>
               </div>
-              {quote.status === 'draft' && (
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => {
-                      queryClient.invalidateQueries({ queryKey: ['quotes'] })
-                    }}
-                    className="flex-1 h-10 flex items-center justify-center gap-2 text-xs font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
-                  >
-                    <ArrowUpRight className="w-4 h-4" />
-                    Enviar ao Cliente
-                  </button>
-                  <button
-                    onClick={() => {
-                      queryClient.invalidateQueries({ queryKey: ['quotes'] })
-                    }}
-                    className="h-10 px-4 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
-                  >
-                    <FileDown className="w-4 h-4" />
-                    PDF
-                  </button>
-                </div>
-              )}
+
+              <div className="mt-3 flex gap-2 flex-wrap">
+                {quote.status === 'draft' && (
+                  <>
+                    <button
+                      onClick={() => handleWhatsApp(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handlePDF(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => handleMarkApproved(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Aprovar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/30 rounded-industrial hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {quote.status === 'approved' && (
+                  <>
+                    <button
+                      onClick={() => handleWhatsApp(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handlePDF(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => handleMarkPaid(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Marcar Pago
+                    </button>
+                  </>
+                )}
+                {quote.status === 'paid' && (
+                  <>
+                    <button
+                      onClick={() => handlePDF(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => handleDelete(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/30 rounded-industrial hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {quote.status === 'rejected' && (
+                  <>
+                    <button
+                      onClick={() => handleWhatsApp(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handleDelete(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/30 rounded-industrial hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>

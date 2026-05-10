@@ -27,8 +27,8 @@ export function HomeTab() {
   const updateSettings = useUpdateSettings()
   const settings = profile?.settings || {}
   const pricing = settings.pricing || {}
-  const transactions = (settings.transactions || []).filter((t) => t.recurring !== true)
-  const recurringTransactions = settings.transactions?.filter((t) => t.recurring === true) || []
+  const nonRecurringTransactions = (settings.transactions || []).filter((t) => t.recurring !== true)
+  const recurringTransactions = (settings.transactions || []).filter((t) => t.recurring === true)
   const links = settings.usefulLinks || []
   const reminder = settings.monthlyReminder || {}
   const expenseCategories = settings.expenseCategories || DEFAULT_EXPENSE_CATEGORIES
@@ -42,16 +42,17 @@ export function HomeTab() {
 
   const allTransactions = settings.transactions || []
 
-  const monthTransactions = transactions.filter((t) => {
-    const date = new Date(t.date)
-    return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
+  const monthTransactions = nonRecurringTransactions.filter((t) => {
+    const d = new Date(t.date)
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
   })
 
   const activeRecurring = recurringTransactions.filter((t) => {
     const start = new Date(t.startDate || t.date)
     const end = t.endDate ? new Date(t.endDate) : null
-    const now = new Date(selectedYear, selectedMonth, 1)
-    return start <= now && (!end || end >= now)
+    const monthStart = new Date(selectedYear, selectedMonth, 1)
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0)
+    return start <= monthEnd && (!end || end >= monthStart)
   })
 
   const totalIncome = monthTransactions
@@ -367,15 +368,14 @@ export function HomeTab() {
           type={showModal}
           onClose={() => setShowModal(null)}
           onSave={(tx) => {
-            const newTransactions = [...allTransactions, { ...tx, id: Date.now() }]
-            updateSettings.mutate({ transactions: newTransactions })
+            updateSettings.mutate({ transactions: [...allTransactions, { ...tx, id: Date.now() }] })
           }}
           expenseCategories={expenseCategories}
           incomeCategories={incomeCategories}
           accounts={accounts}
           recurringTransactions={recurringTransactions}
           onSaveRecurring={(newRecurring) => {
-            updateSettings.mutate({ transactions: newRecurring })
+            updateSettings.mutate({ transactions: [...allTransactions, ...newRecurring] })
           }}
         />
       )}
@@ -423,7 +423,7 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
           startDate: monthDate.toISOString(),
         })
       }
-      onSaveRecurring([...recurringTransactions, ...newRecurring])
+      onSaveRecurring(newRecurring)
     } else {
       onSave({
         type,
