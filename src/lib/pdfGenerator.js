@@ -286,32 +286,61 @@ export function generateWarrantyPDF(data) {
   doc.setTextColor(255, 255, 255)
   doc.text(`PRAZO DE GARANTIA: 90 DIAS`, 105, yPos + 13, { align: 'center' })
 
-  yPos += 30
+  yPos += 28
 
-  doc.setFillColor(30, 41, 59)
-  doc.rect(14, yPos, 182, 60, 'F')
+  const introText = `Certificamos que o servico de montagem realizado para o cliente ${data.clientName || '[NOME DO CLIENTE]'} possui garantia tecnica de 90 (noventa) dias, a contar da data de realizacao do servico ${data.serviceDate || new Date().toLocaleDateString('pt-BR')}, conforme previsto no Codigo de Defesa do Consumidor.`
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(251, 191, 36)
-  doc.text('CONDICOES DA GARANTIA', 18, yPos + 8)
-
+  const wrappedIntro = doc.splitTextToSize(introText, 182)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(226, 232, 240)
-  const terms = [
-    '1. O presente Termo de Garantia cobre exclusivamente os servicos realizados pelo prestador.',
-    '2. O prazo de garantia e de 90 (noventa) dias, contados a partir da data de execucao do servico.',
-    '3. A garantia cobre apenas o trabalho executado, nao incluindo peas ou materiais utilizados.',
-    '4. Peas e materiais fornecidos seguem a garantia padrao do fabricante.',
-    '5. A garantia nao cobre danos causados por uso inadequado, forca maior ou terceiros.',
-    '6. Para acionar a garantia, o cliente deve apresentar este Termo e/ou orcamento original.',
+  doc.setFontSize(9)
+  doc.setTextColor(50, 50, 50)
+  const introBlockHeight = wrappedIntro.length * 5 + 8
+  doc.setFillColor(241, 245, 249)
+  doc.rect(14, yPos, 182, introBlockHeight, 'F')
+  doc.text(wrappedIntro, 16, yPos + 6)
+  yPos += introBlockHeight + 8
+
+  const coverBlock = [
+    { title: 'O QUE ESTA GARANTIA COBRE:', color: emeraldColor, items: [
+      'Falhas na execucao da montagem (ex: portas desalinhadas por falta de regulagem, pecas soltas).',
+      'Danos causados diretamente pelo montador durante a execucao do servico.',
+    ]},
+    { title: 'O QUE ESTA GARANTIA NAO COBRE:', color: [239, 68, 68], items: [
+      'Defeitos de fabricacao do movel, pecas empenadas ou falta de ferragens na embalagem original.',
+      'Danos causados por mau uso, umidade, infiltracoes ou uso de produtos de limpeza inadequados.',
+      'Desalinhamentos futuros causados por piso irregular ou sobrecarga de peso.',
+      'Danos causados se o movel for arrastado, mudado de lugar ou desmontado por terceiros.',
+    ]},
   ]
-  terms.forEach((term, i) => {
-    doc.text(term, 18, yPos + 16 + i * 6.5)
+
+  coverBlock.forEach((section) => {
+    const sectionText = doc.splitTextToSize(section.title, 182)
+    const itemTexts = section.items.map((item) => doc.splitTextToSize(item, 182))
+
+    const blockHeight = 8 + sectionText.length * 5 + itemTexts.flat().length * 5 + 6
+
+    doc.setFillColor(30, 41, 59)
+    doc.rect(14, yPos, 182, blockHeight, 'F')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(...section.color)
+    doc.text(sectionText, 16, yPos + 6)
+
+    let itemY = yPos + 6 + sectionText.length * 5 + 4
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(226, 232, 240)
+
+    itemTexts.forEach((lines) => {
+      doc.text(lines, 18, itemY)
+      itemY += lines.length * 5
+    })
+
+    yPos += blockHeight + 6
   })
 
-  yPos += 70
+  yPos += 10
 
   doc.setDrawColor(...slate300)
   doc.line(14, yPos, 90, yPos)
