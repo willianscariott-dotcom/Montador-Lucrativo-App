@@ -93,7 +93,7 @@ export function SettingsTab() {
   const formatCurrency = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4 pb-32">
       <h2 className="text-lg font-bold text-slate-100">Ajustes</h2>
 
       <div className="bg-slate-800 border-2 border-amber-500 rounded-panel shadow-stamped p-5">
@@ -219,36 +219,6 @@ export function SettingsTab() {
             <p className="text-sm text-slate-400">
               {annualLimit.regime ? `${annualLimit.regime} · ${annualLimit.value ? `R$ ${Number(annualLimit.value).toFixed(2).replace('.', ',')}` : 'não definido'}` : 'Configure seu regime'}
             </p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-500" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button
-          onClick={() => setShowCategories(true)}
-          className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
-        >
-          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-purple-500/10">
-            <Tag className="w-6 h-6 text-purple-400" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium text-slate-100">Categorias</p>
-            <p className="text-sm text-slate-400">{expenseCats} despesas · {incomeCats} receitas</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-500" />
-        </button>
-
-        <button
-          onClick={() => setShowAccounts(true)}
-          className="flex items-center gap-4 p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped hover:bg-slate-700/50 transition-colors"
-        >
-          <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-cyan-500/10">
-            <Wallet className="w-6 h-6 text-cyan-400" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium text-slate-100">Contas</p>
-            <p className="text-sm text-slate-400">{accounts} contas configuradas</p>
           </div>
           <ChevronRight className="w-5 h-5 text-slate-500" />
         </button>

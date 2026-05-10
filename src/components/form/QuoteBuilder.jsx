@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { useUnsaved } from '../Dashboard'
 import { generateQuotePDF } from '../../lib/pdfGenerator'
+import { useQuoteEditStore } from '../../store/quoteEdit'
 import { Plus, Trash2, Save, Download, ArrowLeft, Wrench, Package, X, Bookmark, Calendar } from 'lucide-react'
 
 const DEFAULT_SERVICES = [
@@ -13,7 +14,7 @@ const DEFAULT_SERVICES = [
 
 const DEFAULT_PARTS = [
   'Dobradicas', 'Corredicas Ocultas', 'Corredicas Telescopicas', 'Parafusos',
-  'Buchas', 'Puxador', 'Trilho Alumínio',
+  'Buchas', 'Puxador', 'Trilho Aluminio',
 ]
 
 const emptyItem = {
@@ -28,6 +29,9 @@ export function QuoteBuilder({ onBack }) {
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const { setHasUnsaved } = useUnsaved()
+  const editingQuote = useQuoteEditStore((s) => s.editingQuote)
+  const editingItems = useQuoteEditStore((s) => s.editingItems)
+  const clearEditingQuote = useQuoteEditStore((s) => s.clearEditingQuote)
 
   const [clientName, setClientName] = useState('')
   const [clientDocument, setClientDocument] = useState('')
@@ -36,9 +40,32 @@ export function QuoteBuilder({ onBack }) {
   const [catalogModal, setCatalogModal] = useState({ open: false, index: null })
   const [catalogTab, setCatalogTab] = useState('services')
 
+  useEffect(() => {
+    if (editingQuote) {
+      setClientName(editingQuote.client_name || '')
+      setClientDocument(editingQuote.client_document || '')
+      if (editingItems && editingItems.length > 0) {
+        setItems(editingItems.map((item) => ({
+          type: item.type || 'service',
+          description: item.description || '',
+          details: item.details || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || '',
+        })))
+      }
+    } else {
+      setClientName('')
+      setClientDocument('')
+      setItems([{ ...emptyItem }])
+    }
+  }, [editingQuote, editingItems])
+
+  const userServices = profile?.settings?.meusServicos || []
+  const userParts = profile?.settings?.minhasPecas || []
   const catalogServices = profile?.settings?.catalogServices || []
   const catalogParts = profile?.settings?.catalogParts || []
-  const pricing = profile?.settings?.pricing || {}
+  const allServiceOptions = [...DEFAULT_SERVICES, ...userServices].sort()
+  const allPartOptions = [...DEFAULT_PARTS, ...userParts].sort()
   const hourlyRate = (() => {
     const das = Number(pricing.dasValue) || 0
     const proLabore = Number(pricing.proLabore) || 0
@@ -104,6 +131,36 @@ export function QuoteBuilder({ onBack }) {
       const tenantId = session?.user?.id
       if (!tenantId) throw new Error('Usuário não autenticado')
 
+      if (editingQuote) {
+        const { error: quoteError } = await supabase
+          .from('quotes')
+          .update({
+            client_name: clientName.trim(),
+            client_document: clientDocument.trim() || null,
+            total_amount: totalAmount,
+          })
+          .eq('id', editingQuote.id)
+
+        if (quoteError) throw quoteError
+
+        await supabase.from('quote_items').delete().eq('quote_id', editingQuote.id)
+
+        const itemsToInsert = validItems.map((item) => ({
+          quote_id: editingQuote.id,
+          tenant_id: tenantId,
+          type: item.type,
+          description: item.description.trim(),
+          details: item.details || null,
+          quantity: Number(item.quantity) || 1,
+          unit_price: Number(item.unit_price) || 0,
+        }))
+        const { error: itemsError } = await supabase.from('quote_items').insert(itemsToInsert)
+        if (itemsError) throw itemsError
+
+        clearEditingQuote()
+        return { ...editingQuote, client_name: clientName.trim(), client_document: clientDocument.trim(), total_amount: totalAmount }
+      }
+
       const quotePayload = {
         tenant_id: tenantId,
         client_name: clientName.trim(),
@@ -111,7 +168,6 @@ export function QuoteBuilder({ onBack }) {
         total_amount: totalAmount,
         status: 'draft',
       }
-      console.log('Payload do Orçamento:', quotePayload)
 
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
@@ -126,10 +182,10 @@ export function QuoteBuilder({ onBack }) {
         tenant_id: tenantId,
         type: item.type,
         description: item.description.trim(),
+        details: item.details || null,
         quantity: Number(item.quantity) || 1,
         unit_price: Number(item.unit_price) || 0,
       }))
-      console.log('Payload dos Itens:', itemsToInsert)
 
       const { error: itemsError } = await supabase.from('quote_items').insert(itemsToInsert)
       if (itemsError) throw itemsError
@@ -315,12 +371,12 @@ export function QuoteBuilder({ onBack }) {
                               <option value="">Selecione...</option>
                               {item.type === 'service' ? (
                                 <>
-                                  {DEFAULT_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                  {allServiceOptions.map((s) => <option key={s} value={s}>{s}</option>)}
                                   <option value="__custom__">+ Avulso...</option>
                                 </>
                               ) : (
                                 <>
-                                  {DEFAULT_PARTS.map((p) => <option key={p} value={p}>{p}</option>)}
+                                  {allPartOptions.map((p) => <option key={p} value={p}>{p}</option>)}
                                   <option value="__custom__">+ Avulso...</option>
                                 </>
                               )}

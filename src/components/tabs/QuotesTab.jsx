@@ -6,12 +6,14 @@ import { useAuthStore } from '../../store/auth'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import { generateQuotePDF } from '../../lib/pdfGenerator'
 import { openWhatsApp } from '../../lib/whatsapp'
+import { useQuoteEditStore } from '../../store/quoteEdit'
 
 export function QuotesTab({ onNewQuote }) {
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const updateSettings = useUpdateSettings()
+  const setEditingQuote = useQuoteEditStore((s) => s.setEditingQuote)
 
   const { data: quotes = [], isLoading } = useQuery({
     queryKey: ['quotes'],
@@ -51,6 +53,10 @@ export function QuotesTab({ onNewQuote }) {
 
   const handleMarkPaid = (quote) => {
     if (!window.confirm(`Confirmar pagamento do orçamento de ${quote.client_name} no valor de R$ ${Number(quote.total_amount).toFixed(2).replace('.', ',')}?`)) return
+    if (quote.status === 'paid') return
+
+    const existingTx = (profile?.settings?.transactions || []).find((t) => t.quote_id === quote.id)
+    if (existingTx) return
 
     updateQuoteStatus.mutate({ quoteId: quote.id, status: 'paid' })
 
@@ -88,6 +94,15 @@ export function QuotesTab({ onNewQuote }) {
   const handleDelete = (quote) => {
     if (!window.confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return
     deleteQuote.mutate(quote.id)
+  }
+
+  const handleEdit = async (quote) => {
+    const { data: items } = await supabase
+      .from('quote_items')
+      .select('*')
+      .eq('quote_id', quote.id)
+    setEditingQuote(quote, items || [])
+    onNewQuote()
   }
 
   const handlePDF = async (quote) => {
@@ -189,6 +204,13 @@ export function QuotesTab({ onNewQuote }) {
                 {quote.status === 'draft' && (
                   <>
                     <button
+                      onClick={() => handleEdit(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
                       onClick={() => handleWhatsApp(quote)}
                       className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
                     >
@@ -230,6 +252,13 @@ export function QuotesTab({ onNewQuote }) {
                 {quote.status === 'approved' && (
                   <>
                     <button
+                      onClick={() => handleEdit(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
                       onClick={() => handleWhatsApp(quote)}
                       className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-white bg-emerald-500 rounded-industrial shadow-stamped hover:bg-emerald-400 transition-colors"
                     >
@@ -264,6 +293,9 @@ export function QuotesTab({ onNewQuote }) {
                 )}
                 {quote.status === 'paid' && (
                   <>
+                    <span className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-950 bg-emerald-500 rounded-industrial shadow-stamped">
+                      PAGO
+                    </span>
                     <button
                       onClick={() => handlePDF(quote)}
                       className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-slate-700 border border-slate-600 rounded-industrial hover:bg-slate-600 transition-colors"

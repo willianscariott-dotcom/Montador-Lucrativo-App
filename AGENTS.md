@@ -57,6 +57,12 @@
 - Transações: botões editar/excluir com Pencil + Trash2 em cada item
 - Desmarcar Pago em QuotesTab: status volta para 'approved', remove transação com quote_id do JSONB
 - ProfileManager: pb-24 + mb-24 para não ficar atrás da BottomNav
+- QuoteBuilder: sincroniza selects com DEFAULT_SERVICES/PARTS + settings.meusServicos/minhasPecas em ordem alfabética
+- QuoteBuilder: editingQuote via useQuoteEditStore (Zustand), UPDATE no Supabase ao re-salvar
+- QuotesTab: "Editar" botão em draft/approved, carrega dados no store e navega para QuoteBuilder
+- QuotesTab: handleMarkPaid anti-duplicação (verifica existingTx), Badge "PAGO" em status paid
+- DashboardHeader: fallback dinâmico profile?.settings?.nome || full_name || email || 'Montador Lucrativo'
+- SettingsTab: pb-32 no wrapper, removal de botões Categorias/Contas
 
 ### In Progress
 - Admin Dashboard em /admin

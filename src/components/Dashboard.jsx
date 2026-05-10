@@ -107,7 +107,7 @@ function DashboardHeader({ user, onLogout }) {
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-slate-100 leading-tight">
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : (profile?.full_name || user?.email?.split('@')[0] || 'Montador Pro')}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : (profile?.settings?.nome || profile?.full_name || user?.email?.split('@')[0] || 'Montador Lucrativo')}
           </span>
           <span className="text-xs text-slate-400 capitalize">{profile?.status || 'Trial'}</span>
         </div>
