@@ -130,6 +130,7 @@ export function QuoteBuilder({ onBack }) {
       await queryClient.cancelQueries({ queryKey: ['quote-stats'] })
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] })
       queryClient.invalidateQueries({ queryKey: ['quote-stats'] })
     },
     onSettled: () => {

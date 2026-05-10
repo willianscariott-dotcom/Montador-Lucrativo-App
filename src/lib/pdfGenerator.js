@@ -34,21 +34,21 @@ function addFooter(doc) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(148, 163, 184)
-  doc.text('Montador Pro - Documento gerado via app', 14, pageHeight - 5)
+  doc.text('Montador Lucrativo - Documento gerado via app', 14, pageHeight - 5)
   doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 196, pageHeight - 5, { align: 'right' })
 }
 
 export function generateQuotePDF(quote, items, profile) {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  addHeader(doc, 'ORÇAMENTO', profile?.full_name || 'Montador Pro')
+  addHeader(doc, 'ORCAMENTO', profile?.full_name || 'Montador Lucrativo')
 
   const quoteDate = new Date().toLocaleDateString('pt-BR')
   const quoteNumber = quote.id?.slice(0, 8).toUpperCase() || '00000000'
 
   doc.setFontSize(10)
   doc.setTextColor(255, 255, 255)
-  doc.text(`Nº ${quoteNumber}`, 196, 20, { align: 'right' })
+  doc.text(`N ${quoteNumber}`, 196, 20, { align: 'right' })
   doc.text(`Data: ${quoteDate}`, 196, 28, { align: 'right' })
   doc.text(`Status: ${quote.status?.toUpperCase() || 'RASCUNHO'}`, 196, 34, { align: 'right' })
 
@@ -65,7 +65,7 @@ export function generateQuotePDF(quote, items, profile) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(50, 50, 50)
-  doc.text(`Nome: ${quote.client_name || 'Não informado'}`, 16, yPos + 14)
+  doc.text(`Nome: ${quote.client_name || 'Nao informado'}`, 16, yPos + 14)
   if (quote.client_document) {
     doc.text(`CPF/CNPJ: ${quote.client_document}`, 110, yPos + 14)
   }
@@ -75,7 +75,7 @@ export function generateQuotePDF(quote, items, profile) {
   const tableData = items.map((item, index) => [
     String(index + 1),
     item.description,
-    item.type === 'service' ? 'Serviço' : 'Material',
+    item.type === 'service' ? 'Servico' : 'Material',
     String(item.quantity),
     `R$ ${Number(item.unit_price).toFixed(2).replace('.', ',')}`,
     `R$ ${(item.quantity * item.unit_price).toFixed(2).replace('.', ',')}`,
@@ -83,13 +83,21 @@ export function generateQuotePDF(quote, items, profile) {
 
   autoTable(doc, {
     startY: yPos,
-    head: [['#', 'Descrição', 'Tipo', 'Qtd', 'Valor Unit.', 'Subtotal']],
+    head: [['#', 'Descricao', 'Tipo', 'Qtd', 'Valor Unit.', 'Subtotal']],
     body: tableData,
-    margin: { left: 14, right: 14 },
+    margin: { left: 14, right: 14, top: 10, bottom: 10 },
     styles: { fontSize: 9, cellPadding: { top: 2, right: 3, bottom: 2, left: 3 }, overflow: 'linebreak' },
     headStyles: { fillColor: primaryColor, textColor: accentColor, fontStyle: 'bold', fontSize: 9 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
-    columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 70 }, 2: { cellWidth: 25 }, 3: { cellWidth: 15, halign: 'center' }, 4: { cellWidth: 35, halign: 'right' }, 5: { cellWidth: 35, halign: 'right' } },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 15, halign: 'center' },
+      4: { cellWidth: 35, halign: 'right' },
+      5: { cellWidth: 35, halign: 'right' },
+    },
+    tableWidth: '100%',
     rowPageBreak: 'avoid',
   })
 
@@ -105,7 +113,7 @@ export function generateQuotePDF(quote, items, profile) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...primaryColor)
-  doc.text('TOTAL DO ORÇAMENTO', 114, yPos + 7)
+  doc.text('TOTAL DO ORCAMENTO', 114, yPos + 7)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(14)
@@ -116,7 +124,7 @@ export function generateQuotePDF(quote, items, profile) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(100, 100, 100)
-    doc.text(`Serviços: R$ ${totalServices.toFixed(2).replace('.', ',')}`, 114, yPos + 21)
+    doc.text(`Servicos: R$ ${totalServices.toFixed(2).replace('.', ',')}`, 114, yPos + 21)
   }
   if (totalMaterials > 0) {
     doc.setFont('helvetica', 'normal')
@@ -149,10 +157,10 @@ function addTermsBlock(doc, yPos) {
   doc.setFontSize(8)
   doc.setTextColor(226, 232, 240)
   const terms = [
-    '• Garantia de 90 dias para serviços realizados.',
-    '• Peças/materiais seguem garantia do fabricante.',
-    '• Orçamento válido por 15 dias.',
-    '• Pagamento via PIX ou transferência bancária.',
+    '• Garantia de 90 dias para servicos realizados.',
+    '• Peas/materiais seguem garantia do fabricante.',
+    '•Orcamento valido por 15 dias.',
+    '• Pagamento via PIX ou transferencia bancaria.',
   ]
   terms.forEach((term, i) => {
     doc.text(term, 18, yPos + 16 + i * 5)
@@ -160,14 +168,14 @@ function addTermsBlock(doc, yPos) {
 }
 
 export function generateReceiptPDF(data) {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' })
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  addHeader(doc, 'RECIBO', data.profileName || 'Montador Pro')
+  addHeader(doc, 'RECIBO', data.profileName || 'Montador Lucrativo')
 
   const receiptNumber = `RCP${Date.now().toString().slice(-8)}`
   doc.setFontSize(10)
   doc.setTextColor(255, 255, 255)
-  doc.text(`Nº ${receiptNumber}`, 196, 20, { align: 'right' })
+  doc.text(`N ${receiptNumber}`, 196, 20, { align: 'right' })
   doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 196, 28, { align: 'right' })
 
   let yPos = 55
@@ -199,10 +207,10 @@ export function generateReceiptPDF(data) {
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.text(`Forma de Pagamento: ${data.paymentMethod || 'Não informada'}`, 14, yPos)
+  doc.text(`Forma de Pagamento: ${data.paymentMethod || 'Nao informada'}`, 14, yPos)
   if (data.observations) {
     yPos += 7
-    doc.text(`Observações: ${data.observations}`, 14, yPos)
+    doc.text(`Observacoes: ${data.observations}`, 14, yPos)
   }
 
   yPos += 20
@@ -223,14 +231,14 @@ export function generateReceiptPDF(data) {
 }
 
 export function generateWarrantyPDF(data) {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  addHeader(doc, 'TERMO DE GARANTIA', data.profileName || 'Montador Pro')
+  addHeader(doc, 'TERMO DE GARANTIA', data.profileName || 'Montador Lucrativo')
 
   const warrantyNumber = `GAR${Date.now().toString().slice(-8)}`
   doc.setFontSize(10)
   doc.setTextColor(255, 255, 255)
-  doc.text(`Nº ${warrantyNumber}`, 196, 20, { align: 'right' })
+  doc.text(`N ${warrantyNumber}`, 196, 20, { align: 'right' })
   doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 196, 28, { align: 'right' })
 
   let yPos = 55
@@ -241,7 +249,7 @@ export function generateWarrantyPDF(data) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...primaryColor)
-  doc.text('DADOS DO CLIENTE E SERVIÇO', 16, yPos + 7)
+  doc.text('DADOS DO CLIENTE E SERVICO', 16, yPos + 7)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
@@ -260,13 +268,13 @@ export function generateWarrantyPDF(data) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(...primaryColor)
-  doc.text('DESCRIÇÃO DO SERVIÇO', 16, yPos + 7)
+  doc.text('DESCRICAO DO SERVICO', 16, yPos + 7)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(50, 50, 50)
-  doc.text(data.serviceDescription || 'Serviço realizado', 16, yPos + 14)
-  doc.text(`Data de Execução: ${data.serviceDate || new Date().toLocaleDateString('pt-BR')}`, 16, yPos + 21)
+  doc.text(data.serviceDescription || 'Servico realizado', 16, yPos + 14)
+  doc.text(`Data de Execucao: ${data.serviceDate || new Date().toLocaleDateString('pt-BR')}`, 16, yPos + 21)
 
   yPos += 35
 
@@ -286,18 +294,18 @@ export function generateWarrantyPDF(data) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(251, 191, 36)
-  doc.text('CONDIÇÕES DA GARANTIA', 18, yPos + 8)
+  doc.text('CONDICOES DA GARANTIA', 18, yPos + 8)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(226, 232, 240)
   const terms = [
-    '1. O presente Termo de Garantia cobre exclusivamente os serviços realizados pelo prestador.',
-    '2. O prazo de garantia é de 90 (noventa) dias, contados a partir da data de execução do serviço.',
-    '3. A garantia cobre apenas o trabalho executado, não incluindo peças ou materiais utilizados.',
-    '4. Peças e materiais fornecidos seguem a garantia padrão do fabricante.',
-    '5. A garantia não cobre danos causados por uso inadequado, força maior ou terceiros.',
-    '6. Para acionar a garantia, o cliente deve apresentar este Termo e/ou orçamento original.',
+    '1. O presente Termo de Garantia cobre exclusivamente os servicos realizados pelo prestador.',
+    '2. O prazo de garantia e de 90 (noventa) dias, contados a partir da data de execucao do servico.',
+    '3. A garantia cobre apenas o trabalho executado, nao incluindo peas ou materiais utilizados.',
+    '4. Peas e materiais fornecidos seguem a garantia padrao do fabricante.',
+    '5. A garantia nao cobre danos causados por uso inadequado, forca maior ou terceiros.',
+    '6. Para acionar a garantia, o cliente deve apresentar este Termo e/ou orcamento original.',
   ]
   terms.forEach((term, i) => {
     doc.text(term, 18, yPos + 16 + i * 6.5)

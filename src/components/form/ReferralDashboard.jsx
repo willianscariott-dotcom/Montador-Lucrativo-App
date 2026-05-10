@@ -10,10 +10,10 @@ export function ReferralDashboard({ onBack }) {
   const [copied, setCopied] = useState(false)
 
   const referralCode = profile?.phone || profile?.id?.slice(0, 8).toUpperCase() || 'MONTADOR'
-  const referralLink = `https://montador.pro/convite/${referralCode}`
+  const inviteLink = `${window.location.origin}?ref=${profile?.id || referralCode}`
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink)
+    navigator.clipboard.writeText(inviteLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -48,7 +48,7 @@ export function ReferralDashboard({ onBack }) {
           </div>
 
           <p className="text-sm text-slate-300 mb-4">
-            Indique um amigo e ganhe recompensas quando ele assinar o Montador Pro. Cada indicação é válida para bônus no seu saldo.
+            Indique um amigo e ganhe recompensas quando ele assinar o Montador Lucrativo. Cada indicacao e valida para bonus no seu saldo.
           </p>
 
           <div className="bg-slate-950/50 border border-slate-700 rounded-industrial p-4 mb-4">
@@ -58,7 +58,7 @@ export function ReferralDashboard({ onBack }) {
 
           <div className="bg-slate-950/50 border border-slate-700 rounded-industrial p-3 mb-4">
             <p className="text-xs text-slate-500 mb-1">Link de convite</p>
-            <p className="text-sm text-slate-300 truncate">{referralLink}</p>
+            <p className="text-sm text-slate-300 truncate">{inviteLink}</p>
           </div>
 
           <div className="flex gap-3">

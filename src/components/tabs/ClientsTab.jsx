@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
-import { Users, UserPlus, X, Cake } from 'lucide-react'
+import { Users, UserPlus, X, Cake, Pencil, Trash2 } from 'lucide-react'
 
 export function ClientsTab() {
   const { data: profile } = useProfile()
@@ -13,6 +13,17 @@ export function ClientsTab() {
   const today = new Date()
   const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}`
   const birthdayToday = clients.find((c) => c.birthdate?.slice(5, 10) === todayStr)
+
+  const handleDelete = (clientId) => {
+    if (!window.confirm('Excluir este cliente? Esta acao nao pode ser desfeita.')) return
+    const newClients = clients.filter((c) => c.id !== clientId)
+    updateSettings.mutate({ clients: newClients })
+  }
+
+  const handleEdit = (client) => {
+    setEditingClient(client)
+    setShowModal(true)
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -45,22 +56,36 @@ export function ClientsTab() {
             <Users className="w-6 h-6 text-slate-400" />
           </div>
           <p className="mt-4 text-slate-400">Nenhum cliente cadastrado</p>
-          <p className="mt-1 text-sm text-slate-500">Clique em "Novo Cliente" para começar</p>
+          <p className="mt-1 text-sm text-slate-500">Clique em "Novo Cliente" para comecar</p>
         </div>
       ) : (
         <div className="space-y-3">
           {clients.map((client) => (
-            <div key={client.id} className="p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped flex items-center gap-4">
-              <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-slate-700">
+            <div key={client.id} className="p-4 bg-slate-800 border border-slate-700 rounded-panel shadow-stamped flex items-center gap-3">
+              <div className="w-12 h-12 flex items-center justify-center rounded-industrial bg-slate-700 flex-shrink-0">
                 <Users className="w-6 h-6 text-slate-400" />
               </div>
-              <div className="flex-1">
-                <p className="font-medium text-slate-100">{client.name}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-100 truncate">{client.name}</p>
                 <p className="text-sm text-slate-400">{client.phone ? `(${client.phone.slice(0,2)}) ${client.phone.slice(2,7)}-${client.phone.slice(7)}` : ''}</p>
               </div>
               {client.birthdate && (
-                <span className="text-xs text-amber-500">{new Date(client.birthdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                <span className="text-xs text-amber-500 flex-shrink-0">{new Date(client.birthdate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
               )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleEdit(client)}
+                  className="w-10 h-10 flex items-center justify-center rounded-industrial bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                >
+                  <Pencil className="w-4 h-4 text-amber-500" />
+                </button>
+                <button
+                  onClick={() => handleDelete(client.id)}
+                  className="w-10 h-10 flex items-center justify-center rounded-industrial bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -87,7 +112,7 @@ export function ClientsTab() {
 
 function ClientModal({ client, onClose, onSave }) {
   const [name, setName] = useState(client?.name || '')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(client?.phone || '')
   const [address, setAddress] = useState(client?.address || '')
   const [document, setDocument] = useState(client?.document || '')
   const [birthdate, setBirthdate] = useState(client?.birthdate || '')
@@ -147,8 +172,8 @@ function ClientModal({ client, onClose, onSave }) {
             <input type="text" value={document} onChange={handleDocChange} placeholder="CPF ou CNPJ" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           </div>
           <div>
-            <label className="block mb-1.5 text-sm font-medium text-slate-300">Endereço</label>
-            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereço do cliente" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+            <label className="block mb-1.5 text-sm font-medium text-slate-300">Endereco <span className="text-slate-500">(Opcional)</span></label>
+            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Endereco do cliente" className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
           </div>
           <div>
             <label className="block mb-1.5 text-sm font-medium text-slate-300">Data de Nascimento <span className="text-slate-500">(Opcional)</span></label>
@@ -156,7 +181,7 @@ function ClientModal({ client, onClose, onSave }) {
           </div>
           <button type="submit" className="w-full h-14 flex items-center justify-center gap-2 text-base font-bold text-slate-950 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors">
             <UserPlus className="w-5 h-5" />
-            {client ? 'Salvar Alterações' : 'Adicionar Cliente'}
+            {client ? 'Salvar Alteracoes' : 'Adicionar Cliente'}
           </button>
         </form>
       </div>
