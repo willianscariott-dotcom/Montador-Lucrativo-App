@@ -3,6 +3,7 @@ import { useProfile, useUpdateSettings } from '../../hooks/useProfile'
 import {
   TrendingUp, TrendingDown, Target, DollarSign, ArrowUpRight,
   ArrowDownRight, X, ChevronLeft, ChevronRight, Link2, Bell, Repeat, Eye, EyeOff,
+  Pencil, Trash2,
 } from 'lucide-react'
 
 const DEFAULT_EXPENSE_CATEGORIES = ['Gasolina', 'Alimentacao', 'Material de Montagem', 'Manutencao Ferramentas', 'Internet', 'Telefone', 'Marketing', 'Outros']
@@ -49,11 +50,8 @@ export function HomeTab() {
   })
 
   const activeRecurring = recurringTransactions.filter((t) => {
-    const start = new Date(t.startDate || t.date)
-    const end = t.endDate ? new Date(t.endDate) : null
-    const monthStart = new Date(selectedYear, selectedMonth, 1)
-    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0)
-    return start <= monthEnd && (!end || end >= monthStart)
+    const d = new Date(t.startDate || t.date)
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear
   })
 
   const totalIncome = monthTransactions
@@ -66,11 +64,11 @@ export function HomeTab() {
 
   const recurringIncome = activeRecurring
     .filter((t) => t.type === 'income')
-    .reduce((s, t) => s + Number(t.amount) * (t.multiplier || 1), 0)
+    .reduce((s, t) => s + Number(t.amount), 0)
 
   const recurringExpense = activeRecurring
     .filter((t) => t.type === 'expense')
-    .reduce((s, t) => s + Number(t.amount) * (t.multiplier || 1), 0)
+    .reduce((s, t) => s + Number(t.amount), 0)
 
   const totalMonthIncome = totalIncome + recurringIncome
   const totalMonthExpense = totalExpense + recurringExpense
@@ -97,6 +95,12 @@ export function HomeTab() {
     return days * hours * hourlyRate
   })()
 
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+  const isFutureMonth = selectedYear > currentYear || (selectedYear === currentYear && selectedMonth > currentMonth)
+  const isPastMonth = selectedYear < currentYear || (selectedYear === currentYear && selectedMonth < currentMonth)
+  const isCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth
+
   const progressPercent = monthlyTarget > 0 ? Math.min((totalMonthIncome / monthlyTarget) * 100, 100) : 0
 
   const metaBatida = totalMonthIncome >= monthlyTarget && monthlyTarget > 0
@@ -111,7 +115,7 @@ export function HomeTab() {
     return daysPerMonth * hoursPerDay > 0 ? (das + proLabore + fixedCosts) * (1 + profitMargin / 100) / (daysPerMonth * hoursPerDay) : 0
   })()
   const dailyGoal = hourlyRate * hoursPerDay
-  const daysLeft = dailyGoal > 0 ? Math.ceil(remainingToTarget / dailyGoal) : 0
+  const daysLeft = isCurrentMonth && dailyGoal > 0 ? Math.ceil(remainingToTarget / dailyGoal) : 0
 
   const annualLimit = settings.annualLimit || {}
   const regime = annualLimit.regime || 'MEI'
@@ -250,24 +254,37 @@ export function HomeTab() {
             {privacyMode ? '***' : formatCurrency(monthlyTarget)}
           </p>
         </div>
-        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all duration-500 rounded-full ${metaBatida ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <p className={`text-sm text-slate-400 mt-2 text-right ${privacyClass}`}>
-          {privacyMode ? '***' : `${progressPercent.toFixed(1)}% atingido (${formatCurrency(totalMonthIncome)})`}
-        </p>
-        {metaBatida ? (
-          <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-industrial">
-            <p className="text-center font-bold text-emerald-400 text-sm">Parabens! Voce bateu a meta do mes!</p>
+
+        {isFutureMonth ? (
+          <div className="flex items-center justify-center py-4">
+            <p className="text-sm text-slate-500 italic">Mes Futuro - Meta nao aplicavel</p>
           </div>
-        ) : daysLeft > 0 ? (
-          <p className="text-sm text-slate-500 mt-2 text-center">
-            Faltam aprox. <span className="font-bold text-amber-500">{daysLeft}</span> dias de trabalho
-          </p>
-        ) : null}
+        ) : (
+          <>
+            <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${metaBatida ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-amber-400'}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <p className={`text-sm text-slate-400 mt-2 text-right ${privacyClass}`}>
+              {privacyMode ? '***' : `${progressPercent.toFixed(1)}% atingido (${formatCurrency(totalMonthIncome)})`}
+            </p>
+            {metaBatida ? (
+              <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-industrial">
+                <p className="text-center font-bold text-emerald-400 text-sm">Parabens! Voce bateu a meta do mes!</p>
+              </div>
+            ) : isCurrentMonth && daysLeft > 0 ? (
+              <p className="text-sm text-slate-500 mt-2 text-center">
+                Faltam aprox. <span className="font-bold text-amber-500">{daysLeft}</span> dias de trabalho
+              </p>
+            ) : isPastMonth ? (
+              <p className="text-sm text-slate-500 mt-2 text-center">
+                Fechamento do Mes - {progressPercent.toFixed(1)}% atingido
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
 
       {limit > 0 && (
@@ -338,7 +355,9 @@ export function HomeTab() {
           </div>
         ) : (
           <div className="space-y-2">
-            {activeRecurring.map((t, i) => (
+            {activeRecurring.map((t, i) => {
+              const globalIndex = allTransactions.findIndex((tx) => tx.id === t.id)
+              return (
               <div key={`r-${i}`} className="flex items-center justify-between p-3 bg-amber-500/5 border border-amber-500/20 rounded-industrial">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 flex items-center justify-center rounded-industrial bg-amber-500/10`}>
@@ -352,12 +371,26 @@ export function HomeTab() {
                     </p>
                   </div>
                 </div>
-                <span className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount) * (t.multiplier || 1))}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount) * (t.multiplier || 1))}
+                  </span>
+                  <button onClick={() => setShowModal({ type: t.type, editingTx: t, _globalIndex: globalIndex })} className="w-8 h-8 flex items-center justify-center rounded-industrial bg-slate-600 hover:bg-slate-500 transition-colors">
+                    <Pencil className="w-3 h-3 text-slate-300" />
+                  </button>
+                  <button onClick={() => {
+                    const updated = allTransactions.filter((tx) => tx.id !== t.id)
+                    updateSettings.mutate({ transactions: updated })
+                  }} className="w-8 h-8 flex items-center justify-center rounded-industrial bg-red-500/10 hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </button>
+                </div>
               </div>
-            ))}
-            {monthTransactions.map((t, i) => (
+              )
+            })}
+            {monthTransactions.map((t, i) => {
+              const globalIndex = allTransactions.findIndex((tx) => tx.id === t.id)
+              return (
               <div key={i} className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 flex items-center justify-center rounded-industrial ${t.type === 'income' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
@@ -372,11 +405,23 @@ export function HomeTab() {
                     <p className="text-xs text-slate-500">{t.category} · {t.account} · {new Date(t.date).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
-                <span className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                  </span>
+                  <button onClick={() => setShowModal({ type: t.type, editingTx: t, _globalIndex: globalIndex })} className="w-8 h-8 flex items-center justify-center rounded-industrial bg-slate-600 hover:bg-slate-500 transition-colors">
+                    <Pencil className="w-3 h-3 text-slate-300" />
+                  </button>
+                  <button onClick={() => {
+                    const updated = allTransactions.filter((tx) => tx.id !== t.id)
+                    updateSettings.mutate({ transactions: updated })
+                  }} className="w-8 h-8 flex items-center justify-center rounded-industrial bg-red-500/10 hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </button>
+                </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -384,16 +429,24 @@ export function HomeTab() {
       {showModal && (
         <TransactionModal
           type={showModal}
+          editingTx={showModal.editingTx}
           onClose={() => setShowModal(null)}
           onSave={(tx) => {
-            updateSettings.mutate({ transactions: [...allTransactions, { ...tx, id: Date.now() }] })
+            if (tx._editIndex !== undefined) {
+              const updated = [...allTransactions]
+              updated[tx._editIndex] = { ...tx }
+              delete updated[tx._editIndex]._editIndex
+              updateSettings.mutate({ transactions: updated })
+            } else {
+              updateSettings.mutate({ transactions: [...allTransactions, { ...tx, id: Date.now() }] })
+            }
           }}
           expenseCategories={expenseCategories}
           incomeCategories={incomeCategories}
           accounts={accounts}
-          recurringTransactions={recurringTransactions}
-          onSaveRecurring={(newRecurring) => {
-            updateSettings.mutate({ transactions: [...allTransactions, ...newRecurring] })
+          onDelete={(index) => {
+            const updated = allTransactions.filter((_, i) => i !== index)
+            updateSettings.mutate({ transactions: updated })
           }}
         />
       )}
@@ -409,28 +462,42 @@ export function HomeTab() {
   )
 }
 
-function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCategories, accounts, recurringTransactions, onSaveRecurring }) {
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [account, setAccount] = useState(accounts[0] || 'Carteira')
-  const [category, setCategory] = useState('')
+function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCategories, accounts, editingTx }) {
+  const [description, setDescription] = useState(editingTx?.description || '')
+  const [amount, setAmount] = useState(editingTx ? String(editingTx.amount) : '')
+  const [date, setDate] = useState(editingTx ? editingTx.date?.split('T')[0] : new Date().toISOString().split('T')[0])
+  const [account, setAccount] = useState(editingTx?.account || accounts[0] || 'Carteira')
+  const [category, setCategory] = useState(editingTx?.category || '')
   const [repeatMonths, setRepeatMonths] = useState(1)
 
-  const categories = type === 'expense' ? expenseCategories : incomeCategories
+  const isEditing = !!editingTx
+  const modalType = typeof type === 'object' ? type.type : type
+  const globalIndex = typeof type === 'object' ? type._globalIndex : undefined
+  const categories = modalType === 'expense' ? expenseCategories : incomeCategories
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!description.trim() || !amount || !category) return
 
-    if (repeatMonths > 1) {
+    if (isEditing) {
+      onSave({
+        ...editingTx,
+        type: modalType,
+        description: description.trim(),
+        amount: Number(amount),
+        date: new Date(date).toISOString(),
+        account,
+        category,
+        recurring: false,
+        multiplier: 1,
+      })
+    } else if (repeatMonths > 1) {
       const baseDate = new Date(date)
-      const newRecurring = []
       for (let i = 0; i < repeatMonths; i++) {
         const monthDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate())
-        newRecurring.push({
+        onSave({
           id: Date.now() + i,
-          type,
+          type: modalType,
           description: description.trim(),
           amount: Number(amount),
           date: monthDate.toISOString(),
@@ -441,10 +508,9 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
           startDate: monthDate.toISOString(),
         })
       }
-      onSaveRecurring(newRecurring)
     } else {
       onSave({
-        type,
+        type: modalType,
         description: description.trim(),
         amount: Number(amount),
         date: new Date(date).toISOString(),
@@ -462,7 +528,7 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
       <div className="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-panel shadow-stamped">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <h3 className="font-bold text-slate-100">
-            {type === 'income' ? 'Adicionar Receita' : 'Adicionar Despesa'}
+            {isEditing ? 'Editar Transacao' : modalType === 'income' ? 'Adicionar Receita' : 'Adicionar Despesa'}
           </h3>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-700 hover:bg-slate-600 transition-colors">
             <X className="w-5 h-5 text-slate-300" />
@@ -532,20 +598,22 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
-            <input
-              type="checkbox"
-              id="repeatLanc"
-              checked={repeatMonths > 1}
-              onChange={(e) => setRepeatMonths(e.target.checked ? 2 : 1)}
-              className="w-5 h-5 accent-amber-500"
-            />
-            <label htmlFor="repeatLanc" className="flex items-center gap-2 text-sm font-medium text-slate-200 cursor-pointer">
-              <Repeat className="w-4 h-4" />
-              Repetir lançamento?
-            </label>
-          </div>
-          {repeatMonths > 1 && (
+{isEditing ? null : (
+            <div className="flex items-center gap-3 p-3 bg-slate-700/50 border border-slate-600 rounded-industrial">
+              <input
+                type="checkbox"
+                id="repeatLanc"
+                checked={repeatMonths > 1}
+                onChange={(e) => setRepeatMonths(e.target.checked ? 2 : 1)}
+                className="w-5 h-5 accent-amber-500"
+              />
+              <label htmlFor="repeatLanc" className="flex items-center gap-2 text-sm font-medium text-slate-200 cursor-pointer">
+                <Repeat className="w-4 h-4" />
+                Repetir lancamento?
+              </label>
+            </div>
+          )}
+          {isEditing ? null : repeatMonths > 1 && (
             <div>
               <label className="block mb-1.5 text-sm font-medium text-slate-300">Por quantos meses?</label>
               <input
@@ -556,18 +624,18 @@ function TransactionModal({ type, onClose, onSave, expenseCategories, incomeCate
                 max="12"
                 className="w-full h-12 px-3 text-sm bg-slate-700 border border-slate-600 rounded-industrial text-slate-100 focus:outline-none focus:border-amber-500 transition-colors"
               />
-              <p className="text-xs text-slate-500 mt-1">Lançamento será multiplicado por {repeatMonths} meses</p>
+              <p className="text-xs text-slate-500 mt-1">Lancamento sera multiplicado por {repeatMonths} meses</p>
             </div>
           )}
           <button
             type="submit"
             className={`w-full h-14 flex items-center justify-center gap-2 text-base font-bold rounded-industrial shadow-stamped transition-all ${
-              type === 'income'
+              modalType === 'income'
                 ? 'text-slate-950 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600'
                 : 'text-slate-100 bg-red-500 hover:bg-red-400 active:bg-red-600'
             }`}
           >
-            {type === 'income' ? '+ Adicionar Receita' : '+ Adicionar Despesa'}
+            {isEditing ? 'Salvar Alteracoes' : modalType === 'income' ? '+ Adicionar Receita' : '+ Adicionar Despesa'}
           </button>
         </form>
       </div>

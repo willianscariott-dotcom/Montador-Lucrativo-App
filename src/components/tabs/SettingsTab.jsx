@@ -738,7 +738,7 @@ function ProfileManager({ onClose }) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4 pb-24 mb-24">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-100">Dados Pessoais</h2>
         <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-industrial bg-slate-800 border border-slate-700 hover:bg-slate-700">

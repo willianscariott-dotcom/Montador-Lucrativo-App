@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Plus, FileDown, Clock, ArrowUpRight, Pencil, Trash2, CheckCircle, MessageSquare, Calendar } from 'lucide-react'
+import { FileText, Plus, FileDown, Clock, ArrowUpRight, Pencil, Trash2, CheckCircle, MessageSquare, Calendar, XCircle } from 'lucide-react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/auth'
@@ -74,6 +74,15 @@ export function QuotesTab({ onNewQuote }) {
   const handleMarkApproved = (quote) => {
     if (!window.confirm(`Marcar orçamento de ${quote.client_name} como aprovado?`)) return
     updateQuoteStatus.mutate({ quoteId: quote.id, status: 'approved' })
+  }
+
+  const handleUnmarkPaid = (quote) => {
+    if (!window.confirm(`Desmarcar pagamento do orçamento de ${quote.client_name}? A transacao correspondente sera removida.`)) return
+    updateQuoteStatus.mutate({ quoteId: quote.id, status: 'approved' })
+    const settings = profile?.settings || {}
+    const transactions = settings.transactions || []
+    const cleaned = transactions.filter((t) => t.quote_id !== quote.id)
+    updateSettings.mutate({ transactions: cleaned })
   }
 
   const handleDelete = (quote) => {
@@ -261,6 +270,13 @@ export function QuotesTab({ onNewQuote }) {
                     >
                       <FileDown className="w-4 h-4" />
                       PDF
+                    </button>
+                    <button
+                      onClick={() => handleUnmarkPaid(quote)}
+                      className="h-10 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-100 bg-amber-500 rounded-industrial shadow-stamped hover:bg-amber-400 transition-colors"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Desmarcar Pago
                     </button>
                     <button
                       onClick={() => handleDelete(quote)}
