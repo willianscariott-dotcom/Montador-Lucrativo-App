@@ -20,23 +20,86 @@ const DEFAULT_WARRANTY = {
   ],
 }
 
-function addHeader(doc, title, subtitle = '') {
+function getProfileName(profile) {
+  return profile?.settings?.nome || profile?.full_name || 'Montador Lucrativo'
+}
+
+function getProfilePhone(profile) {
+  const phone = profile?.phone || ''
+  if (!phone) return ''
+  if (phone.length >= 10) {
+    return `(${phone.slice(0, 2)}) ${phone.slice(2, 7)}-${phone.slice(7)}`
+  }
+  return phone
+}
+
+function formatCNPJ(cnpj) {
+  if (!cnpj || cnpj.length !== 14) return cnpj || ''
+  return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`
+}
+
+function addImageLogo(doc, logoBase64, x, y, w, h) {
+  if (!logoBase64) return
+  try {
+    const format = logoBase64.includes('image/png') ? 'PNG' : 'JPEG'
+    doc.addImage(logoBase64, format, x, y, w, h)
+  } catch (err) {
+    console.warn('Logo nao pode ser adicionado ao PDF:', err.message)
+  }
+}
+
+function addHeader(doc, title, profile) {
+  const profileName = getProfileName(profile)
+  const logoBase64 = profile?.settings?.logo
+  const headerHeight = logoBase64 ? 50 : 45
+
   doc.setFillColor(...primaryColor)
-  doc.rect(0, 0, 210, 45, 'F')
+  doc.rect(0, 0, 210, headerHeight, 'F')
 
   doc.setFillColor(...accentColor)
-  doc.rect(0, 42, 210, 3, 'F')
+  doc.rect(0, headerHeight - 3, 210, 3, 'F')
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.setTextColor(...accentColor)
-  doc.text(title, 14, 20)
+  if (logoBase64) {
+    addImageLogo(doc, logoBase64, 10, 6, 38, 38)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(...accentColor)
+    doc.text(title, 52, 20)
 
-  if (subtitle) {
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setTextColor(255, 255, 255)
-    doc.text(subtitle, 14, 28)
+    const phone = getProfilePhone(profile)
+    const cnpj = formatCNPJ(profile?.cnpj)
+    let infoY = 30
+    if (profile?.address) {
+      doc.text(profile.address, 52, infoY)
+      infoY += 5
+    }
+    const infoLine = [profileName, cnpj, phone].filter(Boolean).join('  |  ')
+    doc.text(infoLine, 52, infoY)
+  } else {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(22)
+    doc.setTextColor(...accentColor)
+    doc.text(title, 14, 20)
+
+    if (profile) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(255, 255, 255)
+      const info = [profileName, getProfilePhone(profile), formatCNPJ(profile?.cnpj)].filter(Boolean).join('  |  ')
+      doc.text(info, 14, 28)
+      if (profile?.address) {
+        doc.setFontSize(8)
+        doc.text(profile.address, 14, 35)
+      }
+    } else {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(255, 255, 255)
+      doc.text(profileName, 14, 28)
+    }
   }
 }
 
@@ -55,7 +118,7 @@ function addFooter(doc) {
 export function generateQuotePDF(quote, items, profile) {
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  addHeader(doc, 'ORCAMENTO', profile?.full_name || 'Montador Lucrativo')
+  addHeader(doc, 'ORCAMENTO', profile)
 
   const quoteDate = new Date().toLocaleDateString('pt-BR')
   const quoteNumber = quote.id?.slice(0, 8).toUpperCase() || '00000000'
@@ -66,7 +129,7 @@ export function generateQuotePDF(quote, items, profile) {
   doc.text(`Data: ${quoteDate}`, 196, 28, { align: 'right' })
   doc.text(`Status: ${quote.status?.toUpperCase() || 'RASCUNHO'}`, 196, 34, { align: 'right' })
 
-  let yPos = 55
+  let yPos = 60
 
   doc.setFillColor(241, 245, 249)
   doc.rect(14, yPos, 182, 20, 'F')
@@ -86,7 +149,8 @@ export function generateQuotePDF(quote, items, profile) {
 
   yPos += 28
 
-  const tableData = items.map((item, index) => {
+  const safeItems = Array.isArray(items) ? items : []
+  const tableData = safeItems.map((item, index) => {
     const descText = item.description + (item.details ? `\n${item.details}` : '')
     return [
       String(index + 1),
@@ -120,9 +184,9 @@ export function generateQuotePDF(quote, items, profile) {
 
   yPos = doc.lastAutoTable.finalY + 10
 
-  const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
-  const totalServices = items.filter((i) => i.type === 'service').reduce((s, i) => s + i.quantity * i.unit_price, 0)
-  const totalMaterials = items.filter((i) => i.type === 'material').reduce((s, i) => s + i.quantity * i.unit_price, 0)
+  const totalAmount = safeItems.reduce((sum, item) => sum + (item.quantity || 1) * (item.unit_price || 0), 0)
+  const totalServices = safeItems.filter((i) => i?.type === 'service').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0)
+  const totalMaterials = safeItems.filter((i) => i?.type === 'material').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0)
 
   doc.setFillColor(241, 245, 249)
   doc.rect(110, yPos, 86, 28, 'F')
@@ -187,7 +251,7 @@ function addTermsBlock(doc, yPos) {
 export function generateReceiptPDF(data) {
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  addHeader(doc, 'RECIBO', data.profileName || 'Montador Lucrativo')
+  addHeader(doc, 'RECIBO', data.profile)
 
   const receiptNumber = `RCP${Date.now().toString().slice(-8)}`
   doc.setFontSize(10)
@@ -195,7 +259,7 @@ export function generateReceiptPDF(data) {
   doc.text(`N ${receiptNumber}`, 196, 20, { align: 'right' })
   doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 196, 28, { align: 'right' })
 
-  let yPos = 55
+  let yPos = 60
 
   doc.setFillColor(241, 245, 249)
   doc.rect(14, yPos, 182, 35, 'F')
@@ -252,7 +316,7 @@ export function generateWarrantyPDF(data) {
 
   const warrantyConfig = data.warrantySettings || DEFAULT_WARRANTY
 
-  addHeader(doc, 'TERMO DE GARANTIA', data.profileName || 'Montador Lucrativo')
+  addHeader(doc, 'TERMO DE GARANTIA', data.profile)
 
   const warrantyNumber = `GAR${Date.now().toString().slice(-8)}`
   doc.setFontSize(10)
@@ -260,7 +324,7 @@ export function generateWarrantyPDF(data) {
   doc.text(`N ${warrantyNumber}`, 196, 20, { align: 'right' })
   doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 196, 28, { align: 'right' })
 
-  let yPos = 55
+  let yPos = 60
 
   doc.setFillColor(241, 245, 249)
   doc.rect(14, yPos, 182, 30, 'F')
@@ -376,9 +440,9 @@ export function generateWarrantyPDF(data) {
 export function generateAnnualReportPDF(data) {
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  const { year, profileName, monthlyData, totals } = data
+  const { year, profile, monthlyData, totals } = data
 
-  addHeader(doc, `RELATORIO ANUAL ${year}`, profileName || 'Montador Lucrativo')
+  addHeader(doc, `RELATORIO ANUAL ${year}`, profile)
 
   doc.setFillColor(...slate300)
   doc.rect(14, 50, 182, 2, 'F')

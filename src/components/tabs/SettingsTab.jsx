@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProfile, useUpdateSettings, useUpdateProfile } from '../../hooks/useProfile'
 import { CatalogManager } from '../form/CatalogManager'
 import { PricingSettings } from '../form/PricingSettings'
@@ -672,14 +672,29 @@ function WarrantyManager({ onClose }) {
 function ProfileManager({ onClose }) {
   const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
-  const [fullName, setFullName] = useState(profile?.full_name || '')
-  const [phone, setPhone] = useState(profile?.phone || '')
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
-  const [address, setAddress] = useState(profile?.address || '')
-  const [cnpj, setCnpj] = useState(profile?.cnpj || '')
-  const [instagram, setInstagram] = useState(profile?.instagram || '')
-  const [pixKey, setPixKey] = useState(profile?.pix_key || '')
+  const updateSettings = useUpdateSettings()
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [address, setAddress] = useState('')
+  const [cnpj, setCnpj] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [pixKey, setPixKey] = useState('')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '')
+      setPhone(profile.phone || '')
+      setAvatarUrl(profile.avatar_url || '')
+      setAddress(profile.address || '')
+      setCnpj(profile.cnpj || '')
+      setInstagram(profile.instagram || '')
+      setPixKey(profile.pix_key || '')
+      setLogoUrl(profile.settings?.logo || '')
+    }
+  }, [profile])
 
   const handleSave = async () => {
     setSaving(true)
@@ -693,6 +708,9 @@ function ProfileManager({ onClose }) {
         instagram: instagram.replace('@', '').trim(),
         pix_key: pixKey.trim(),
       })
+      if (logoUrl !== (profile?.settings?.logo || '')) {
+        await updateSettings.mutateAsync({ logo: logoUrl })
+      }
       onClose()
     } finally {
       setSaving(false)
@@ -704,6 +722,14 @@ function ProfileManager({ onClose }) {
     if (!file) return
     const reader = new FileReader()
     reader.onload = (ev) => setAvatarUrl(ev.target?.result || '')
+    reader.readAsDataURL(file)
+  }
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => setLogoUrl(ev.target?.result || '')
     reader.readAsDataURL(file)
   }
 
@@ -731,6 +757,23 @@ function ProfileManager({ onClose }) {
           <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
         </label>
         <p className="text-xs text-slate-500 mt-2">Foto de perfil</p>
+      </div>
+
+      <div className="flex flex-col items-center mb-2">
+        <label className="relative cursor-pointer group">
+          <div className="w-20 h-20 rounded-industrial bg-slate-700 border-2 border-slate-600 flex items-center justify-center overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-xs text-slate-500 text-center px-1">Logo<br/>PDF</span>
+            )}
+          </div>
+          <div className="absolute inset-0 bg-slate-950/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-industrial">
+            <span className="text-xs text-white font-medium">Alterar</span>
+          </div>
+          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+        </label>
+        <p className="text-xs text-slate-500 mt-2">Logo da Empresa (para PDF)</p>
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-panel shadow-stamped p-4 space-y-4">

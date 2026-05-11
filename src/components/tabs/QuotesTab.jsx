@@ -90,7 +90,14 @@ export function QuotesTab({ onNewQuote }) {
       multiplier: 1,
       quote_id: quote.id,
     }
-    updateSettings.mutate({ transactions: [...transactions, newTx] })
+    updateSettings.mutate(
+      { transactions: [...transactions, newTx] },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['quotes'] })
+        },
+      }
+    )
   }
 
   const handleMarkApproved = (quote) => {
@@ -104,7 +111,14 @@ export function QuotesTab({ onNewQuote }) {
     const settings = profile?.settings || {}
     const transactions = settings.transactions || []
     const cleaned = transactions.filter((t) => t.quote_id !== quote.id)
-    updateSettings.mutate({ transactions: cleaned })
+    updateSettings.mutate(
+      { transactions: cleaned },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['quotes'] })
+        },
+      }
+    )
   }
 
   const handleDelete = (quote) => {

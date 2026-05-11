@@ -93,9 +93,12 @@ function ReceiptModal({ profile, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     generateReceiptPDF({
-      ...form,
+      clientName: form.clientName,
       amount: Number(form.amount),
-      profileName: profile?.full_name || 'Montador Pro',
+      description: form.description,
+      paymentMethod: form.paymentMethod,
+      observations: form.observations,
+      profile,
     })
     onClose()
   }
@@ -189,9 +192,15 @@ function WarrantyModal({ profile, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const warrantySettings = profile?.settings?.warranty || null
     generateWarrantyPDF({
-      ...form,
-      profileName: profile?.full_name || 'Montador Pro',
+      clientName: form.clientName,
+      clientPhone: form.clientPhone,
+      clientDocument: form.clientDocument,
+      serviceDescription: form.serviceDescription,
+      serviceDate: form.serviceDate,
+      profile,
+      warrantySettings,
     })
     onClose()
   }
@@ -294,7 +303,7 @@ function AnnualReportModal({ profile, onClose }) {
     }
     generateAnnualReportPDF({
       year,
-      profileName: profile?.full_name || 'Montador Pro',
+      profile,
       monthlyData: months,
       totals,
     })

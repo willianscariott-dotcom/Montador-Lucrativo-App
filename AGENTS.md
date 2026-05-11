@@ -63,14 +63,23 @@
 - QuotesTab: handleMarkPaid anti-duplicação (verifica existingTx), Badge "PAGO" em status paid
 - DashboardHeader: fallback dinâmico profile?.settings?.nome || full_name || email || 'Montador Lucrativo'
 - SettingsTab: pb-32 no wrapper, removal de botões Categorias/Contas
+- Admin Dashboard (/admin): React Router, role protection, users list, wallets/withdrawal processing, mobile-first, BottomNav
+- QuoteBuilder: safeItems defensivo (Array.isArray, || []), catalogServices/catalogParts null checks, itemsToInsert filter(Boolean)
+- Cache Fix (QuotesTab): onSuccess on updateSettings mutation call queryClient.invalidateQueries(['quotes']) after mark/unmark paid
+- ProfileManager hydration: useEffect sync state com useProfile data, estados iniciais vazios populados via useEffect
+- ProfileManager: Logo da Empresa upload base64 salvo em settings.logo via updateSettings
+- PDF Profile Injection: all generators (QuotePDF, ReceiptPDF, WarrantyPDF, AnnualReportPDF) now receive full profile object, header injects logo via doc.addImage, name/CNPJ/phone/address
+- pdfGenerator.js: safeItems Array.isArray check em todos reduce/filter, addImageLogo com try/catch, formatCNPJ helper, getProfileName/getProfilePhone helpers
 
 ### In Progress
-- Admin Dashboard em /admin
+- (none)
 
 ### Blocked
 - (none)
 
 ### Next Steps
-- Admin Dashboard (/admin): ver profiles, wallets, editar status do usuário
-- Testar e validar tudo
+- Testar cache invalidation no QuotesTab (marcar/desmarcar pago)
+- Testar ProfileManager re-abertura e inputs populados
+- Testar PDF gerado com logo e dados do perfil
+- Testar Admin Dashboard com role admin
 
